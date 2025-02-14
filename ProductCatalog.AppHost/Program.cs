@@ -4,7 +4,8 @@ var redis = builder.AddRedis("redis")
     .WithImageTag("latest");
 var postgres = builder.AddPostgres("postgres")
     .WithImageTag("latest")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithPgAdmin();
 
 var catalogDb = postgres.AddDatabase("catalogdb");
 

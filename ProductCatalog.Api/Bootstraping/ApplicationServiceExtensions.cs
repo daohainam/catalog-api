@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ProductCatalog.Api.Infrastructure.Data;
 
 namespace ProductCatalog.Api.Bootstraping
 {

@@ -5,10 +5,15 @@ var redis = builder.AddRedis("redis")
 var postgres = builder.AddPostgres("postgres")
     .WithImageTag("latest")
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithPgAdmin();
+    .WithPgAdmin((rbuilder) => {
+        rbuilder
+            .WithImageTag("latest");
+    });
 
 var catalogDb = postgres.AddDatabase("catalogdb");
 
-builder.AddProject<Projects.ProductCatalog_Api>("productcatalog-api");
+var migrationService = builder.AddProject<Projects.ProductCatalog_Api_MigrationService>("catalog-api-migrationservice").WithReference(catalogDb).WaitFor(catalogDb);
+
+builder.AddProject<Projects.ProductCatalog_Api>("catalog-api").WithReference(catalogDb).WaitForCompletion(migrationService);
 
 builder.Build().Run();

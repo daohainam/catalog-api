@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ProductCatalog.Api.MigrationService\ProductCatalog.Api.MigrationService.csproj" />
     <ProjectReference Include="..\ProductCatalog.Api\ProductCatalog.Api.csproj" />
   </ItemGroup>
 

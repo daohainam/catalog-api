@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.Hosting;
-using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace ProductCatalog.Api.Infrastructure.Domain
 {
-    public class Product
+    [Index(nameof(TenantId))]
+    public class Product: ITenancyEntity
     {
         public Guid Id { get; set; }
+        public Guid TenantId { get; set; }
         public string Name { get; set; } = default!;
         public string Description { get; set; } = default!;
         public double PriceFrom { get; set; }

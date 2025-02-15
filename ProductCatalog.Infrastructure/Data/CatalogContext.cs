@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using ProductCatalog.Api.Infrastructure.Domain;
 using System.Reflection.Metadata;
 

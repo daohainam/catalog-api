@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace ProductCatalog.Api.Infrastructure.Domain
+namespace ProductCatalog.Infrastructure.Entities
 {
     [Index(nameof(Price))]
     [Index(nameof(AvailableStock))]
@@ -11,7 +11,7 @@ namespace ProductCatalog.Api.Infrastructure.Domain
         public string Sku { get; set; } = default!;
         public string Name { get; set; } = default!;
         public double Price { get; set; }
-        public int AvailableStock { get; set; }        
+        public int AvailableStock { get; set; }
         public Product Product { get; set; } = default!;
         public ICollection<VariantDimentionValue> VariantDimentionValues { get; set; } = [];
     }

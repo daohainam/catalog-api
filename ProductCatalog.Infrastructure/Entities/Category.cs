@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace ProductCatalog.Api.Infrastructure.Domain
+namespace ProductCatalog.Infrastructure.Entities
 {
     [Index(nameof(TenantId))]
-    public class Category: ITenancyEntity
+    public class Category : ITenancyEntity
     {
         public Guid Id { get; set; }
         public Guid TenantId { get; set; }

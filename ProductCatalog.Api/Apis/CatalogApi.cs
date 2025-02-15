@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ProductCatalog.Api.Infrastructure.Domain;
 using ProductCatalog.Api.Models;
 using ProductCatalog.Api.Services;
 using System.ComponentModel;
@@ -18,8 +17,7 @@ public static class CatalogApi
         // Routes for querying catalog items.
         v1.MapGet("/categories", GetAllCategories)
             .WithName("ListCategories")
-            .WithSummary("List categories")
-            .WithTags("Category");
+            .WithSummary("List categories");
 
         v1.MapPost("/categories", CreateCategory)
             .WithName("CreateCategory")
@@ -48,6 +46,7 @@ public static class CatalogApi
             .OrderBy(c => c.Name)
             .Skip(pageSize * pageIndex)
             .Take(pageSize)
+            .Select(c => services.Mapper.Map<Category>(c))
             .ToListAsync();
 
         return TypedResults.Ok(new PaginatedResult<Category>(pageIndex, pageSize, totalItems, itemsOnPage));
@@ -55,19 +54,14 @@ public static class CatalogApi
 
     public static async Task<Created> CreateCategory(
         [AsParameters] CatalogServices services,
-        Category product)
+        Category category)
     {
-        var item = new Category
-        {
-            Id = product.Id,
-            Description = product.Description,
-            Name = product.Name,
-            ParentId = product.ParentId
-        };
+        var entity = services.Mapper.Map<ProductCatalog.Infrastructure.Entities.Category>(category);
+        entity.Id = Guid.CreateVersion7();
 
-        services.Context.Categories.Add(item);
+        services.Context.Categories.Add(entity);
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/categories/{item.Id}");
+        return TypedResults.Created($"/api/catalog/categories/{entity.Id}");
     }
 }

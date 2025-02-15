@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace ProductCatalog.Api.Infrastructure.Domain
+namespace ProductCatalog.Infrastructure.Entities
 {
     [Index(nameof(TenantId))]
-    public class Product: ITenancyEntity
+    public class Product : ITenancyEntity
     {
         public Guid Id { get; set; }
         public Guid TenantId { get; set; }

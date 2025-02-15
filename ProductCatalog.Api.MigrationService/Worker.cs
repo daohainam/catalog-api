@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using ProductCatalog.Api.Infrastructure.Data;
 using System.Diagnostics;
 using OpenTelemetry.Trace;
+using ProductCatalog.Infrastructure.Data;
 
 namespace ProductCatalog.Api.MigrationService;
 

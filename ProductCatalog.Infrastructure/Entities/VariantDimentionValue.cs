@@ -1,4 +1,4 @@
-﻿namespace ProductCatalog.Api.Infrastructure.Domain
+﻿namespace ProductCatalog.Infrastructure.Entities
 {
     public class VariantDimentionValue
     {

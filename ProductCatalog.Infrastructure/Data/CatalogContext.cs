@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using ProductCatalog.Api.Infrastructure.Domain;
+using ProductCatalog.Infrastructure.Entities;
 using System.Reflection.Metadata;
 
-namespace ProductCatalog.Api.Infrastructure.Data;
-public class CatalogContext: DbContext
+namespace ProductCatalog.Infrastructure.Data;
+public class CatalogContext : DbContext
 {
     public CatalogContext(DbContextOptions<CatalogContext> options, IConfiguration configuration) : base(options)
     {

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ProductCatalog.Api.Infrastructure.Data;
+using ProductCatalog.Infrastructure.Data;
 
 namespace ProductCatalog.Api.Bootstraping
 {
@@ -9,6 +9,7 @@ namespace ProductCatalog.Api.Bootstraping
         {
             builder.Services.AddOpenApi();
             builder.Services.AddApiVersioning();
+            builder.Services.AddAutoMapper(typeof(ModelProfile));
 
             builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
             {

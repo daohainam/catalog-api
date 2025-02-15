@@ -132,6 +132,9 @@ namespace ProductCatalog.Infrastructure.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -139,6 +142,12 @@ namespace ProductCatalog.Infrastructure.Migrations
                     b.PrimitiveCollection<string[]>("Images")
                         .IsRequired()
                         .HasColumnType("text[]");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -152,6 +161,12 @@ namespace ProductCatalog.Infrastructure.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VariantCount")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -172,6 +187,12 @@ namespace ProductCatalog.Infrastructure.Migrations
 
                     b.Property<int>("AvailableStock")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -252,17 +273,21 @@ namespace ProductCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Product", b =>
                 {
-                    b.HasOne("ProductCatalog.Infrastructure.Entities.Brand", null)
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Brand", "Brand")
                         .WithMany("Products")
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProductCatalog.Infrastructure.Entities.Category", null)
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Category", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Variant", b =>

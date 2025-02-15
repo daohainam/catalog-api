@@ -71,6 +71,11 @@ namespace ProductCatalog.Infrastructure.Migrations
                     Description = table.Column<string>(type: "text", nullable: false),
                     PriceFrom = table.Column<double>(type: "double precision", nullable: false),
                     PriceTo = table.Column<double>(type: "double precision", nullable: false),
+                    IsPublished = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    VariantCount = table.Column<int>(type: "integer", nullable: false),
                     CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
                     BrandId = table.Column<Guid>(type: "uuid", nullable: false),
                     Images = table.Column<string[]>(type: "text[]", nullable: false)
@@ -120,7 +125,9 @@ namespace ProductCatalog.Infrastructure.Migrations
                     Sku = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Price = table.Column<double>(type: "double precision", nullable: false),
-                    AvailableStock = table.Column<int>(type: "integer", nullable: false)
+                    AvailableStock = table.Column<int>(type: "integer", nullable: false),
+                    IsPublished = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {

@@ -6,11 +6,11 @@ using System.Reflection.Metadata;
 namespace ProductCatalog.Infrastructure.Data;
 public class CatalogContext : DbContext
 {
-    public CatalogContext(DbContextOptions<CatalogContext> options, IConfiguration configuration) : base(options)
+    public CatalogContext(DbContextOptions<CatalogContext> options) : base(options)
     {
     }
 
-    public DbSet<Branch> Branches { get; set; }
+    public DbSet<Brand> Brands { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Dimension> Dimensions { get; set; }
     public DbSet<DimensionValue> DimensionValues { get; set; }
@@ -20,7 +20,7 @@ public class CatalogContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Branch>()
+        modelBuilder.Entity<Brand>()
             .Property(b => b.Name)
             .IsRequired();
 

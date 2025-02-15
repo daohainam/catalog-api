@@ -8,7 +8,7 @@ namespace ProductCatalog.Api
         public ModelProfile()
         {
             CreateMap<Category, ProductCatalog.Infrastructure.Entities.Category>();
-            CreateMap<Branch, ProductCatalog.Infrastructure.Entities.Branch>();
+            CreateMap<Brand, ProductCatalog.Infrastructure.Entities.Brand>();
             CreateMap<Product, ProductCatalog.Infrastructure.Entities.Product>();
         }
     }

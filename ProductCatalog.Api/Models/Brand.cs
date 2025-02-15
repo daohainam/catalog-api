@@ -2,7 +2,7 @@
 
 namespace ProductCatalog.Api.Models
 {
-    public class Branch
+    public class Brand
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = default!;

@@ -24,6 +24,15 @@ public static class CatalogApi
             .WithSummary("Create a category")
             .WithDescription("Create a category");
 
+        v1.MapGet("/brands", GetAllBrands)
+            .WithName("ListBrands")
+            .WithSummary("List brands");
+
+        v1.MapPost("/brands", CreateBrand)
+            .WithName("CreateBrand")
+            .WithSummary("Create a brand")
+            .WithDescription("Create a brand");
+
         return app;
     }
 
@@ -63,5 +72,42 @@ public static class CatalogApi
         await services.Context.SaveChangesAsync();
 
         return TypedResults.Created($"/api/catalog/categories/{entity.Id}");
+    }
+
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public static async Task<Ok<PaginatedResult<Brand>>> GetAllBrands(
+        [AsParameters] PaginationRequest paginationRequest,
+        [AsParameters] CatalogServices services
+    )
+    {
+        var pageSize = paginationRequest.PageSize;
+        var pageIndex = paginationRequest.PageIndex;
+
+        var query = services.Context.Brands;
+
+        var totalItems = await query
+            .LongCountAsync();
+
+        var itemsOnPage = await query
+            .OrderBy(c => c.Name)
+            .Skip(pageSize * pageIndex)
+            .Take(pageSize)
+            .Select(c => services.Mapper.Map<Brand>(c))
+            .ToListAsync();
+
+        return TypedResults.Ok(new PaginatedResult<Brand>(pageIndex, pageSize, totalItems, itemsOnPage));
+    }
+
+    public static async Task<Created> CreateBrand(
+        [AsParameters] CatalogServices services,
+        Brand brand)
+    {
+        var entity = services.Mapper.Map<ProductCatalog.Infrastructure.Entities.Brand>(brand);
+        entity.Id = Guid.CreateVersion7();
+
+        services.Context.Brands.Add(entity);
+        await services.Context.SaveChangesAsync();
+
+        return TypedResults.Created($"/api/catalog/brands/{entity.Id}");
     }
 }

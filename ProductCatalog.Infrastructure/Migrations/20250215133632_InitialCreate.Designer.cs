@@ -9,10 +9,10 @@ using ProductCatalog.Infrastructure.Data;
 
 #nullable disable
 
-namespace ProductCatalog.Api.Infrastructure.Migrations
+namespace ProductCatalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogContext))]
-    [Migration("20250215093153_InitialCreate")]
+    [Migration("20250215133632_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Branch", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Brand", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -46,10 +46,10 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Branches");
+                    b.ToTable("Brands");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Category", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -78,7 +78,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Dimension", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Dimension", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -103,7 +103,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("Dimensions");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.DimensionValue", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.DimensionValue", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -123,13 +123,13 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("DimensionValues");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Product", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BranchId")
+                    b.Property<Guid>("BrandId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CategoryId")
@@ -158,7 +158,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BranchId");
+                    b.HasIndex("BrandId");
 
                     b.HasIndex("CategoryId");
 
@@ -167,7 +167,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Variant", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Variant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -201,7 +201,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("Variants");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.VariantDimentionValue", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.VariantDimentionValue", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -231,9 +231,9 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.ToTable("VariantDimentionValues");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Category", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Category", b =>
                 {
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Category", "Parent")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Category", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -242,9 +242,9 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.DimensionValue", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.DimensionValue", b =>
                 {
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Dimension", "Dimension")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Dimension", "Dimension")
                         .WithMany("DimensionValues")
                         .HasForeignKey("DimensionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -253,24 +253,24 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.Navigation("Dimension");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Product", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Product", b =>
                 {
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Branch", null)
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Brand", null)
                         .WithMany("Products")
-                        .HasForeignKey("BranchId")
+                        .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Category", null)
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Category", null)
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Variant", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Variant", b =>
                 {
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Product", "Product")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Product", "Product")
                         .WithMany("Variants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -279,21 +279,21 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.VariantDimentionValue", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.VariantDimentionValue", b =>
                 {
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Dimension", "Dimension")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Dimension", "Dimension")
                         .WithMany()
                         .HasForeignKey("DimensionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.DimensionValue", "DimensionValue")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.DimensionValue", "DimensionValue")
                         .WithMany()
                         .HasForeignKey("DimensionValueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProductCatalog.Api.Infrastructure.Domain.Variant", "Variant")
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Variant", "Variant")
                         .WithMany("VariantDimentionValues")
                         .HasForeignKey("VariantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -306,29 +306,29 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     b.Navigation("Variant");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Branch", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Category", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Category", b =>
                 {
                     b.Navigation("Children");
 
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Dimension", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Dimension", b =>
                 {
                     b.Navigation("DimensionValues");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Product", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Product", b =>
                 {
                     b.Navigation("Variants");
                 });
 
-            modelBuilder.Entity("ProductCatalog.Api.Infrastructure.Domain.Variant", b =>
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Variant", b =>
                 {
                     b.Navigation("VariantDimentionValues");
                 });

@@ -12,7 +12,7 @@ namespace ProductCatalog.Infrastructure.Entities
         public double PriceFrom { get; set; }
         public double PriceTo { get; set; }
         public Guid CategoryId { get; set; }
-        public Guid BranchId { get; set; }
+        public Guid BrandId { get; set; }
         public string[] Images { get; set; } = [];
         public ICollection<Variant> Variants { get; set; } = [];
     }

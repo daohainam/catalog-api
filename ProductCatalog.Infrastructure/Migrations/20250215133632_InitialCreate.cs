@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ProductCatalog.Api.Infrastructure.Migrations
+namespace ProductCatalog.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -12,7 +12,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Branches",
+                name: "Brands",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -22,7 +22,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Branches", x => x.Id);
+                    table.PrimaryKey("PK_Brands", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -72,16 +72,16 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                     PriceFrom = table.Column<double>(type: "double precision", nullable: false),
                     PriceTo = table.Column<double>(type: "double precision", nullable: false),
                     CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BranchId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BrandId = table.Column<Guid>(type: "uuid", nullable: false),
                     Images = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Products", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Products_Branches_BranchId",
-                        column: x => x.BranchId,
-                        principalTable: "Branches",
+                        name: "FK_Products_Brands_BrandId",
+                        column: x => x.BrandId,
+                        principalTable: "Brands",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -167,8 +167,8 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Branches_TenantId",
-                table: "Branches",
+                name: "IX_Brands_TenantId",
+                table: "Brands",
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
@@ -187,9 +187,9 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                 column: "DimensionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_BranchId",
+                name: "IX_Products_BrandId",
                 table: "Products",
-                column: "BranchId");
+                column: "BrandId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
@@ -251,7 +251,7 @@ namespace ProductCatalog.Api.Infrastructure.Migrations
                 name: "Products");
 
             migrationBuilder.DropTable(
-                name: "Branches");
+                name: "Brands");
 
             migrationBuilder.DropTable(
                 name: "Categories");

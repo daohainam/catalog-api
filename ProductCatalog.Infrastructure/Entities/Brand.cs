@@ -3,7 +3,7 @@
 namespace ProductCatalog.Infrastructure.Entities
 {
     [Index(nameof(TenantId))]
-    public class Branch : ITenancyEntity
+    public class Brand : ITenancyEntity
     {
         public Guid Id { get; set; }
         public Guid TenantId { get; set; }

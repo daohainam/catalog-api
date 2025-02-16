@@ -12,7 +12,7 @@ using ProductCatalog.Infrastructure.Data;
 namespace ProductCatalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogContext))]
-    [Migration("20250216183638_InitialCreate")]
+    [Migration("20250216184817_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -99,6 +99,8 @@ namespace ProductCatalog.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
 
                     b.ToTable("Dimensions");
                 });
@@ -266,6 +268,15 @@ namespace ProductCatalog.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Dimension", b =>
+                {
+                    b.HasOne("ProductCatalog.Infrastructure.Entities.Product", null)
+                        .WithMany("Dimensions")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.DimensionValue", b =>
                 {
                     b.HasOne("ProductCatalog.Infrastructure.Entities.Dimension", "Dimension")
@@ -353,6 +364,8 @@ namespace ProductCatalog.Infrastructure.Migrations
 
             modelBuilder.Entity("ProductCatalog.Infrastructure.Entities.Product", b =>
                 {
+                    b.Navigation("Dimensions");
+
                     b.Navigation("Variants");
                 });
 

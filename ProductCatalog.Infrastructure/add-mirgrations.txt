@@ -1,0 +1,1 @@
+﻿dotnet ef migrations add InitialCreate --project ..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj --startup-project ..\ProductCatalog.Api.MigrationService\ProductCatalog.Api.MigrationService.csproj

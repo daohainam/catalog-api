@@ -22,5 +22,6 @@ namespace ProductCatalog.Infrastructure.Entities
         public Category Category { get; set; } = default!;
         public Brand Brand { get; set; } = default!;
         public ICollection<Variant> Variants { get; set; } = [];
+        public ICollection<Dimension> Dimensions { get; set; } = [];
     }
 }

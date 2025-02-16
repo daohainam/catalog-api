@@ -47,21 +47,6 @@ namespace ProductCatalog.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Dimensions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    DisplayName = table.Column<string>(type: "text", nullable: false),
-                    DisplayType = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Dimensions", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Products",
                 columns: table => new
                 {
@@ -98,20 +83,22 @@ namespace ProductCatalog.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DimensionValues",
+                name: "Dimensions",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DimensionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: false)
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    DisplayName = table.Column<string>(type: "text", nullable: false),
+                    DisplayType = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DimensionValues", x => x.Id);
+                    table.PrimaryKey("PK_Dimensions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DimensionValues_Dimensions_DimensionId",
-                        column: x => x.DimensionId,
-                        principalTable: "Dimensions",
+                        name: "FK_Dimensions_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -136,6 +123,25 @@ namespace ProductCatalog.Infrastructure.Migrations
                         name: "FK_Variants_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DimensionValues",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DimensionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DimensionValues", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DimensionValues_Dimensions_DimensionId",
+                        column: x => x.DimensionId,
+                        principalTable: "Dimensions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -187,6 +193,11 @@ namespace ProductCatalog.Infrastructure.Migrations
                 name: "IX_Categories_TenantId",
                 table: "Categories",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dimensions_ProductId",
+                table: "Dimensions",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DimensionValues_DimensionId",

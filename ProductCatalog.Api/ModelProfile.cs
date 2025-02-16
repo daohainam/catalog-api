@@ -7,9 +7,12 @@ namespace ProductCatalog.Api
     {
         public ModelProfile()
         {
-            CreateMap<Category, ProductCatalog.Infrastructure.Entities.Category>();
-            CreateMap<Brand, ProductCatalog.Infrastructure.Entities.Brand>();
-            CreateMap<Product, ProductCatalog.Infrastructure.Entities.Product>();
+            CreateMap<Category, Infrastructure.Entities.Category>();
+            CreateMap<Brand, Infrastructure.Entities.Brand>();
+            CreateMap<Product, Infrastructure.Entities.Product>();
+            CreateMap<Dimension, Infrastructure.Entities.Dimension>();
+
+            CreateMap<Infrastructure.Entities.Dimension, Dimension>();
         }
     }
 }

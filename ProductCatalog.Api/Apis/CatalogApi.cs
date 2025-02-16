@@ -46,6 +46,10 @@ public static class CatalogApi
             .WithSummary("Create a product")
             .WithDescription("Create a product");
 
+        v1.MapGet("/products/{id:guid}/dimensions", GetProductDimensions)
+            .WithName("GetProductDimensions")
+            .WithSummary("Get product dimensions");
+
         return app;
     }
 
@@ -193,4 +197,26 @@ public static class CatalogApi
 
         return TypedResults.Created($"/api/catalog/products/{entity.Id}");
     }
-}
+    public static async Task<Results<Ok<PaginatedResult<Dimension>>, NotFound>> GetProductDimensions(
+    [AsParameters] PaginationRequest paginationRequest,
+    [AsParameters] CatalogServices services,
+    [Description("The type of items to return")] Guid id)
+    {
+        var pageSize = paginationRequest.PageSize;
+        var pageIndex = paginationRequest.PageIndex;
+
+        var entity = await services.Context.Products.Include(p => p.Dimensions).Where(p => p.Id == id).SingleOrDefaultAsync();
+
+        if (entity == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var itemsOnPage = entity.Dimensions
+            .Skip(pageSize * pageIndex)
+            .Take(pageSize)
+            .Select(d => services.Mapper.Map<Dimension>(d))
+            .ToList();
+
+        return TypedResults.Ok(new PaginatedResult<Dimension>(pageIndex, pageSize, entity.Dimensions.LongCount(), itemsOnPage));
+    }}

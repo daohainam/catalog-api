@@ -216,6 +216,9 @@ namespace ProductCatalog.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("IsPublished", "IsDeleted")
+                        .IsDescending(true, false);
+
                     b.ToTable("Variants");
                 });
 

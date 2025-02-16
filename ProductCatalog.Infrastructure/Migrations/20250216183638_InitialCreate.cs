@@ -229,6 +229,12 @@ namespace ProductCatalog.Infrastructure.Migrations
                 column: "AvailableStock");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Variants_IsPublished_IsDeleted",
+                table: "Variants",
+                columns: new[] { "IsPublished", "IsDeleted" },
+                descending: new[] { true, false });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Variants_Price",
                 table: "Variants",
                 column: "Price");

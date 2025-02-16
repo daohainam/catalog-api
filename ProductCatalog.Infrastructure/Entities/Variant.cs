@@ -4,6 +4,7 @@ namespace ProductCatalog.Infrastructure.Entities
 {
     [Index(nameof(Price))]
     [Index(nameof(AvailableStock))]
+    [Index(nameof(IsPublished), nameof(IsDeleted), IsDescending = [true, false])]
     public class Variant
     {
         public Guid Id { get; set; }

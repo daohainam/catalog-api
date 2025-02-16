@@ -56,7 +56,6 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
-            // Run migration in a transaction to avoid partial migration if it fails.
             await dbContext.Database.MigrateAsync(cancellationToken);
         });
     }

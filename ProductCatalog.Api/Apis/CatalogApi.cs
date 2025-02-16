@@ -12,7 +12,7 @@ public static class CatalogApi
     {
         // RouteGroupBuilder for catalog endpoints
         var vApi = app.NewVersionedApi("Catalog");
-        var v1 = vApi.MapGroup("api/catalog").HasApiVersion(1, 0);
+        var v1 = vApi.MapGroup("api/catalog/v{version:apiVersion}").HasApiVersion(1, 0);
 
         // Routes for querying catalog items.
         v1.MapGet("/categories", GetAllCategories)

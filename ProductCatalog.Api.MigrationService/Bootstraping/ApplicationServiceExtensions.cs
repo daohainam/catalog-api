@@ -11,6 +11,7 @@ namespace ProductCatalog.Api.Bootstraping
             {
                 dbContextOptionsBuilder.UseNpgsql(builder =>
                 {
+                    builder.MigrationsAssembly(typeof(CatalogContext).Assembly.FullName);
                 });
             });
         }

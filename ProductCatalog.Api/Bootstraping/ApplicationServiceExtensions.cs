@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Asp.Versioning;
+using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Infrastructure.Data;
+using System;
 
 namespace ProductCatalog.Api.Bootstraping
 {
@@ -8,7 +10,12 @@ namespace ProductCatalog.Api.Bootstraping
         public static void AddApplicationServices(this IHostApplicationBuilder builder)
         {
             builder.Services.AddOpenApi();
-            builder.Services.AddApiVersioning();
+            builder.Services.AddApiVersioning(options => {
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = ApiVersionReader.Combine(
+                    new UrlSegmentApiVersionReader(),
+                    new HeaderApiVersionReader("X-Version"));
+            });
             builder.Services.AddAutoMapper(typeof(ModelProfile));
 
             builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>

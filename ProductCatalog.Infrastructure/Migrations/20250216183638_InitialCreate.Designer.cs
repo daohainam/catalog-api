@@ -12,7 +12,7 @@ using ProductCatalog.Infrastructure.Data;
 namespace ProductCatalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogContext))]
-    [Migration("20250215225700_InitialCreate")]
+    [Migration("20250216183638_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -218,6 +218,9 @@ namespace ProductCatalog.Infrastructure.Migrations
                     b.HasIndex("Price");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("IsPublished", "IsDeleted")
+                        .IsDescending(true, false);
 
                     b.ToTable("Variants");
                 });

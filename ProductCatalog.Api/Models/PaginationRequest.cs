@@ -1,8 +1,14 @@
-﻿namespace ProductCatalog.Api.Models
+﻿using System.ComponentModel;
+
+namespace ProductCatalog.Api.Models
 {
-    public class PaginationRequest(int pageIndex, int pageSize)
+    public class PaginationRequest(int pageSize = 20, int pageIndex = 0)
     {
-        public int PageIndex => pageIndex;
-        public int PageSize => pageSize;
+        [property: DefaultValue(20)]
+        public int PageSize { get; set; } = pageSize;
+
+
+        [property: DefaultValue(0)]
+        public int PageIndex { get; set; } = pageIndex;
     }
 }

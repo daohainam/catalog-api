@@ -3,27 +3,26 @@ using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Infrastructure.Data;
 using System;
 
-namespace ProductCatalog.Api.Bootstraping
-{
-    public static class ApplicationServiceExtensions
-    {
-        public static void AddApplicationServices(this IHostApplicationBuilder builder)
-        {
-            builder.Services.AddOpenApi();
-            builder.Services.AddApiVersioning(options => {
-                options.ReportApiVersions = true;
-                options.ApiVersionReader = ApiVersionReader.Combine(
-                    new UrlSegmentApiVersionReader(),
-                    new HeaderApiVersionReader("X-Version"));
-            });
-            builder.Services.AddAutoMapper(typeof(ModelProfile));
+namespace ProductCatalog.Api.Bootstraping;
 
-            builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
+public static class ApplicationServiceExtensions
+{
+    public static void AddApplicationServices(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddOpenApi();
+        builder.Services.AddApiVersioning(options => {
+            options.ReportApiVersions = true;
+            options.ApiVersionReader = ApiVersionReader.Combine(
+                new UrlSegmentApiVersionReader(),
+                new HeaderApiVersionReader("X-Version"));
+        });
+        builder.Services.AddAutoMapper(typeof(ModelProfile));
+
+        builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
+        {
+            dbContextOptionsBuilder.UseNpgsql(builder =>
             {
-                dbContextOptionsBuilder.UseNpgsql(builder =>
-                {
-                });
             });
-        }
+        });
     }
 }

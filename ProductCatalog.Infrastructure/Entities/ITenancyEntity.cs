@@ -1,7 +1,6 @@
-﻿namespace ProductCatalog.Infrastructure.Entities
+﻿namespace ProductCatalog.Infrastructure.Entities;
+
+public interface ITenancyEntity
 {
-    public interface ITenancyEntity
-    {
-        Guid TenantId { get; set; }
-    }
+    Guid TenantId { get; set; }
 }

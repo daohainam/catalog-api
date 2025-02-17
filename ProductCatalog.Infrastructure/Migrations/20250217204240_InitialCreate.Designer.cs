@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductCatalog.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ProductCatalog.Infrastructure.Data;
 namespace ProductCatalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogContext))]
-    partial class CatalogContextModelSnapshot : ModelSnapshot
+    [Migration("20250217204240_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

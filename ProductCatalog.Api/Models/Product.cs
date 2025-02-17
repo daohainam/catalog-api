@@ -2,17 +2,29 @@
 
 namespace ProductCatalog.Api.Models
 {
-    public class Product
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = default!;
-        public string Description { get; set; } = default!;
-        public double PriceFrom { get; set; }
-        public double PriceTo { get; set; }
-        public Guid CategoryId { get; set; }
-        public string CategoryName { get; set; } = default!;
-        public Guid BranchId { get; set; }
-        public string BranchName { get; set; } = default!;
-        public string[] Images { get; set; } = [];
-    }
+    public record ProductCreate(
+            string Name,
+            string Description,
+            double PriceFrom,
+            double PriceTo,
+            Guid CategoryId,
+            string CategoryName,
+            Guid BranchId,
+            string BranchName,
+            string[] Images
+        );
+
+    public record Product(
+                Guid Id,
+                string Name,
+                string Description,
+                double PriceFrom,
+                double PriceTo,
+                Guid CategoryId,
+                string CategoryName,
+                Guid BranchId,
+                string BranchName,
+                string[] Images
+            ) : ProductCreate(Name, Description, PriceFrom, PriceTo, CategoryId, CategoryName, BranchId, BranchName, Images);
+
 }

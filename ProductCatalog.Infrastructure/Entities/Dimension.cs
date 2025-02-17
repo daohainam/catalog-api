@@ -1,5 +1,8 @@
-﻿namespace ProductCatalog.Infrastructure.Entities
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace ProductCatalog.Infrastructure.Entities
 {
+    [Index(nameof(Id), nameof(Name), IsUnique = true)]
     public class Dimension
     {
         public Guid Id { get; set; }

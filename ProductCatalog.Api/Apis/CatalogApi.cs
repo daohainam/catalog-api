@@ -8,6 +8,8 @@ using System.ComponentModel;
 namespace ProductCatalog.Api.Apis;
 public static class CatalogApi
 {
+    private const string ApiName = "api/catalog";
+
     public static IEndpointRouteBuilder MapCatalogApi(this IEndpointRouteBuilder app)
     {
         // RouteGroupBuilder for catalog endpoints
@@ -46,9 +48,16 @@ public static class CatalogApi
             .WithSummary("Create a product")
             .WithDescription("Create a product");
 
-        v1.MapGet("/products/{id:guid}/dimensions", GetProductDimensions)
+        v1.MapGet("/dimensions", GetProductDimensions)
             .WithName("GetProductDimensions")
             .WithSummary("Get product dimensions");
+        v1.MapPost("/dimensions", CreateDimension)
+            .WithName("CreateDimension")
+            .WithSummary("Create a dimension with values");
+        v1.MapPost("/dimensions/{id:guid}/values", CreateDimensionValues)
+            .WithName("CreateDimensionValue")
+            .WithSummary("Create a value for a dimension");
+
 
         return app;
     }
@@ -81,7 +90,7 @@ public static class CatalogApi
 
     public static async Task<Created> CreateCategory(
         [AsParameters] CatalogServices services,
-        Category category)
+        CategoryCreate category)
     {
         var entity = services.Mapper.Map<Infrastructure.Entities.Category>(category);
         entity.Id = Guid.CreateVersion7();
@@ -118,9 +127,9 @@ public static class CatalogApi
 
     public static async Task<Created> CreateBrand(
         [AsParameters] CatalogServices services,
-        Brand brand)
+        BrandCreate brand)
     {
-        var entity = services.Mapper.Map<ProductCatalog.Infrastructure.Entities.Brand>(brand);
+        var entity = services.Mapper.Map<Infrastructure.Entities.Brand>(brand);
         entity.Id = Guid.CreateVersion7();
 
         services.Context.Brands.Add(entity);
@@ -183,10 +192,9 @@ public static class CatalogApi
 
     public static async Task<Created> CreateProduct(
     [AsParameters] CatalogServices services,
-    Product product)
+    ProductCreate product)
     {
         var entity = services.Mapper.Map<Infrastructure.Entities.Product>(product);
-        entity.Id = Guid.CreateVersion7();
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
         entity.IsPublished = false;
@@ -197,10 +205,11 @@ public static class CatalogApi
 
         return TypedResults.Created($"/api/catalog/products/{entity.Id}");
     }
+
     public static async Task<Results<Ok<PaginatedResult<Dimension>>, NotFound>> GetProductDimensions(
     [AsParameters] PaginationRequest paginationRequest,
     [AsParameters] CatalogServices services,
-    [Description("The type of items to return")] Guid id)
+    [Description("Product id")] Guid id)
     {
         var pageSize = paginationRequest.PageSize;
         var pageIndex = paginationRequest.PageIndex;
@@ -219,4 +228,41 @@ public static class CatalogApi
             .ToList();
 
         return TypedResults.Ok(new PaginatedResult<Dimension>(pageIndex, pageSize, entity.Dimensions.LongCount(), itemsOnPage));
-    }}
+    }
+
+    public static async Task<Created> CreateDimension(
+        [AsParameters] CatalogServices services,
+        DimensionCreate dimension)
+    { 
+        var entity = services.Mapper.Map<Infrastructure.Entities.Dimension>(dimension);
+
+        services.Context.Dimensions.Add(entity);
+        await services.Context.SaveChangesAsync();
+
+        return TypedResults.Created($"/api/catalog/products/{entity.Id}");
+    }
+
+    public static async Task<Results<Created, NotFound>> CreateDimensionValues(
+        [AsParameters] CatalogServices services,
+        [Description("Dimension id")] Guid id,
+        List<DimensionValueCreate> dimensionValues)
+    {
+        var entity = await services.Context.Dimensions.SingleOrDefaultAsync(d => d.Id == id);
+
+        if (entity == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        // Assuming you need to add dimension values to the entity
+        foreach (var value in dimensionValues)
+        {
+            var dimensionValueEntity = services.Mapper.Map<Infrastructure.Entities.DimensionValue>(value);
+            entity.DimensionValues.Add(dimensionValueEntity);
+        }
+
+        await services.Context.SaveChangesAsync();
+
+        return TypedResults.Created($"/api/catalog/dimensions/{entity.Id}/values");
+    }
+}

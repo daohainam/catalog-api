@@ -1,7 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var redis = builder.AddRedis("redis")
-    .WithImageTag("latest");
+//var redis = builder.AddRedis("redis")
+//    .WithImageTag("latest");
 var postgres = builder.AddPostgres("postgres")
     .WithImageTag("latest")
     .WithVolume("catalogdb", "/var/lib/postgresql/data")

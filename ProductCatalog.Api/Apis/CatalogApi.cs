@@ -93,7 +93,6 @@ public static class CatalogApi
         CategoryCreate category)
     {
         var entity = services.Mapper.Map<Infrastructure.Entities.Category>(category);
-        entity.Id = Guid.CreateVersion7();
 
         services.Context.Categories.Add(entity);
         await services.Context.SaveChangesAsync();

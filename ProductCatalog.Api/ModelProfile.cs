@@ -26,7 +26,13 @@ public class ModelProfile: Profile
         CreateMap<Infrastructure.Entities.Product, Product>();
 
         CreateMap<DimensionCreate, Infrastructure.Entities.Dimension>()
-            .ForMember(dst => dst.Id, opt => opt.MapFrom(src => Guid.CreateVersion7()));
+            .ForMember(dst => dst.Id, opt => opt.MapFrom(src => Guid.CreateVersion7()))
+            .ForMember(dst => dst.DimensionValues, opt => opt.MapFrom(src => src.Values.Select(v => new Infrastructure.Entities.DimensionValue
+            {
+                Id = Guid.CreateVersion7(),
+                Value = v
+            })));
+
         CreateMap<Dimension, Infrastructure.Entities.Dimension>();
         CreateMap<Infrastructure.Entities.Dimension, Dimension>();
 

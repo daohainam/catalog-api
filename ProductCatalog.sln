@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductCatalog.Api.Migratio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductCatalog.Infrastructure", "ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj", "{731BF28B-423E-4250-816A-F855111332C4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A9BCF85D-B755-4994-96ED-A87942934961}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionalTests", "Tests\FunctionalTests\FunctionalTests.csproj", "{B645A235-9F23-4523-B0E4-0B124E2F115D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,8 +42,15 @@ Global
 		{731BF28B-423E-4250-816A-F855111332C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{731BF28B-423E-4250-816A-F855111332C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{731BF28B-423E-4250-816A-F855111332C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B645A235-9F23-4523-B0E4-0B124E2F115D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B645A235-9F23-4523-B0E4-0B124E2F115D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B645A235-9F23-4523-B0E4-0B124E2F115D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B645A235-9F23-4523-B0E4-0B124E2F115D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B645A235-9F23-4523-B0E4-0B124E2F115D} = {A9BCF85D-B755-4994-96ED-A87942934961}
 	EndGlobalSection
 EndGlobal

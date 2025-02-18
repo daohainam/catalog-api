@@ -12,7 +12,7 @@ using ProductCatalog.Infrastructure.Data;
 namespace ProductCatalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogContext))]
-    [Migration("20250217204240_InitialCreate")]
+    [Migration("20250218173033_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -63,7 +63,7 @@ namespace ProductCatalog.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ParentId")
+                    b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TenantId")
@@ -264,9 +264,7 @@ namespace ProductCatalog.Infrastructure.Migrations
                 {
                     b.HasOne("ProductCatalog.Infrastructure.Entities.Category", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
                 });

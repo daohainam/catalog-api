@@ -68,13 +68,20 @@ namespace FunctionalTests.Tests
         public async Task Create_Category_And_Read_Success()
         {
             // Arrange
-            var category = new CategoryCreate(Guid.Empty, "Test Category", "Test Description");
+            var category = new CategoryCreate(null, "Test Category", "Test Description");
 
             // Act
             var result = await CatalogApi.CreateCategory(CatalogServices, category);
 
             // Assert
             Assert.Equal((int)HttpStatusCode.Created, result.StatusCode);
+
+            // Act
+            var categories = await CatalogApi.GetAllCategories(new PaginationRequest(10, 0), CatalogServices, Guid.Empty);
+
+            // Assert
+            Assert.Equal((int)HttpStatusCode.OK, categories.StatusCode);
+            Assert.Single(categories.Value!.Items);
         }
     }
 }

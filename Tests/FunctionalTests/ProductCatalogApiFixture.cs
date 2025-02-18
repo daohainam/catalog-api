@@ -1,4 +1,5 @@
 ﻿using Aspire.Hosting;
+using Json.More;
 using k8s.KubeConfigModels;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,7 @@ namespace FunctionalTests
             var builder = DistributedApplication.CreateBuilder(options);
             postgres = builder.AddPostgres("postgres")
                 .WithImageTag("latest");
-            var catalogDb = postgres.AddDatabase("catalogdb", "catalog");
+            postgres.AddDatabase("catalogdb", "catalog");
 
             app = builder.Build();            
         }
@@ -37,14 +38,11 @@ namespace FunctionalTests
         public async Task InitializeAsync()
         {
             await app.StartAsync();
-            
-            var s = await app.GetConnectionStringAsync("catalogdb");
+            await Task.Delay(5000);
+            var resourceNotificationService = app.Services.GetRequiredService<ResourceNotificationService>();
+            await resourceNotificationService.WaitForResourceAsync("postgres", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(30));
 
-            var csBuilder = new Npgsql.NpgsqlConnectionStringBuilder(await postgres.Resource.GetConnectionStringAsync() ?? throw new InvalidOperationException("Could not get connection string"))
-            {
-                Database = "catalog"
-            };
-            DbConnectionString = csBuilder.ConnectionString;
+            DbConnectionString = (await app.GetConnectionStringAsync("catalogdb"))!;
 
             var optionsBuilder = new DbContextOptionsBuilder<CatalogContext>();
             optionsBuilder.UseNpgsql(DbConnectionString);

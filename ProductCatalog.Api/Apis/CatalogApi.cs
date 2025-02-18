@@ -67,11 +67,16 @@ public static class CatalogApi
     public static async Task<Ok<PaginatedResult<Category>>> GetAllCategories(
         [AsParameters] PaginationRequest paginationRequest,
         [AsParameters] CatalogServices services,
-        [Description("Id of parent, use Guid.Empty to get root categories")] Guid parentId
+        [Description("Id of parent, use Guid.Empty to get root categories")] Guid? parentId
     )
     {
         var pageSize = paginationRequest.PageSize;
         var pageIndex = paginationRequest.PageIndex;
+
+        if (parentId == Guid.Empty)
+        {
+            parentId = null;
+        }
 
         var query = services.Context.Categories.Where(c => c.ParentId == parentId);
 

@@ -41,7 +41,7 @@ public class ModelProfile: Profile
         CreateMap<Variant, Infrastructure.Entities.Variant>();
         CreateMap<Infrastructure.Entities.Variant, Variant>();
 
-        CreateMap<DimensionValueCreate, Infrastructure.Entities.DimensionValue>()
+        CreateMap<DimensionValue, Infrastructure.Entities.DimensionValue>()
             .ForMember(dst => dst.Id, opt => opt.MapFrom(src => Guid.CreateVersion7()));
     }
 }

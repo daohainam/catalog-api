@@ -48,16 +48,15 @@ public static class CatalogApi
             .WithSummary("Create a product")
             .WithDescription("Create a product");
 
-        v1.MapGet("/dimensions", GetProductDimensions)
+        v1.MapGet("/products/{id:guid}/dimensions", GetProductDimensions)
             .WithName("GetProductDimensions")
             .WithSummary("Get product dimensions");
-        v1.MapPost("/dimensions", CreateDimension)
+        v1.MapPost("/products/{id:guid}/dimensions", CreateDimension)
             .WithName("CreateDimension")
             .WithSummary("Create a dimension with values");
-        v1.MapPost("/dimensions/{id:guid}/values", CreateDimensionValues)
-            .WithName("CreateDimensionValue")
-            .WithSummary("Create a value for a dimension");
-
+        v1.MapPost("/products/{id:guid}/dimensions/{id:guid}/values", CreateDimensionValues)
+            .WithName("CreateDimensionValues")
+            .WithSummary("Create values for a dimension");
 
         return app;
     }
@@ -102,7 +101,7 @@ public static class CatalogApi
         services.Context.Categories.Add(entity);
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/categories/{entity.Id}");
+        return TypedResults.Created($"/api/catalog/v1/categories/{entity.Id}");
     }
 
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
@@ -139,7 +138,7 @@ public static class CatalogApi
         services.Context.Brands.Add(entity);
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/brands/{entity.Id}");
+        return TypedResults.Created($"/api/catalog/v1/brands/{entity.Id}");
     }
 
     private static async Task<Results<Ok<Product>, NotFound, BadRequest<ProblemDetails>>> GetProductById (
@@ -207,7 +206,7 @@ public static class CatalogApi
         services.Context.Products.Add(entity);
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/products/{entity.Id}");
+        return TypedResults.Created($"/api/catalog/v1/products/{entity.Id}");
     }
 
     public static async Task<Results<Ok<PaginatedResult<Dimension>>, NotFound>> GetProductDimensions(
@@ -234,22 +233,30 @@ public static class CatalogApi
         return TypedResults.Ok(new PaginatedResult<Dimension>(pageIndex, pageSize, entity.Dimensions.LongCount(), itemsOnPage));
     }
 
-    public static async Task<Created> CreateDimension(
+    public static async Task<Results<Created, NotFound>> CreateDimension(
         [AsParameters] CatalogServices services,
+        [Description("Product id")] Guid id,
         DimensionCreate dimension)
-    { 
-        var entity = services.Mapper.Map<Infrastructure.Entities.Dimension>(dimension);
+    {
+        var product = await services.Context.Products.SingleOrDefaultAsync(p => p.Id == id);
+        if (product == null)
+        {
+            return TypedResults.NotFound();
+        }
 
-        services.Context.Dimensions.Add(entity);
+        var entity = services.Mapper.Map<Infrastructure.Entities.Dimension>(dimension);
+        entity.ProductId = product.Id;
+        product.Dimensions.Add(entity);
+
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/products/{entity.Id}");
+        return TypedResults.Created($"/api/catalog/v1/dimensions/{entity.Id}");
     }
 
     public static async Task<Results<Created, NotFound>> CreateDimensionValues(
         [AsParameters] CatalogServices services,
         [Description("Dimension id")] Guid id,
-        List<DimensionValueCreate> dimensionValues)
+        List<DimensionValue> dimensionValues)
     {
         var entity = await services.Context.Dimensions.SingleOrDefaultAsync(d => d.Id == id);
 
@@ -267,6 +274,26 @@ public static class CatalogApi
 
         await services.Context.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/catalog/dimensions/{entity.Id}/values");
+        return TypedResults.Created($"/api/catalog/v1/dimensions/{entity.Id}/values");
+    }
+
+    public static async Task<Results<Created, NotFound>> CreateVariant(
+    [AsParameters] CatalogServices services,
+    [Description("Product id")] Guid id,
+    VariantCreate variant)
+    {
+        var product = await services.Context.Products.SingleOrDefaultAsync(p => p.Id == id);
+        if (product == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var entity = services.Mapper.Map<Infrastructure.Entities.Variant>(variant);
+        entity.ProductId = product.Id;
+        product.Variants.Add(entity);
+
+        await services.Context.SaveChangesAsync();
+
+        return TypedResults.Created($"/api/catalog/v1/dimensions/{entity.Id}");
     }
 }

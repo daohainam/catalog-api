@@ -7,11 +7,11 @@ public static class ApplicationServiceExtensions
 {
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
-        builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
+        builder.AddNpgsqlDbContext<ProductCatalogDbContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
         {
             dbContextOptionsBuilder.UseNpgsql(builder =>
             {
-                builder.MigrationsAssembly(typeof(CatalogContext).Assembly.FullName);
+                builder.MigrationsAssembly(typeof(ProductCatalogDbContext).Assembly.FullName);
             });
         });
     }

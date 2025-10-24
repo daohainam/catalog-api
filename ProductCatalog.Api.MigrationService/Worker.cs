@@ -20,7 +20,7 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
         try
         {
             using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<CatalogContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
 
             await EnsureDatabaseAsync(dbContext, cancellationToken);
             await RunMigrationAsync(dbContext, cancellationToken);
@@ -35,7 +35,7 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
         hostApplicationLifetime.StopApplication();
     }
 
-    private static async Task EnsureDatabaseAsync(CatalogContext dbContext, CancellationToken cancellationToken)
+    private static async Task EnsureDatabaseAsync(ProductCatalogDbContext dbContext, CancellationToken cancellationToken)
     {
         var dbCreator = dbContext.GetService<IRelationalDatabaseCreator>();
 
@@ -51,7 +51,7 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
         });
     }
 
-    private static async Task RunMigrationAsync(CatalogContext dbContext, CancellationToken cancellationToken)
+    private static async Task RunMigrationAsync(ProductCatalogDbContext dbContext, CancellationToken cancellationToken)
     {
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
@@ -60,7 +60,7 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
         });
     }
 
-    private static Task SeedDataAsync(CatalogContext dbContext, CancellationToken cancellationToken)
+    private static Task SeedDataAsync(ProductCatalogDbContext dbContext, CancellationToken cancellationToken)
     {
         // Seed data here.
         return Task.CompletedTask;

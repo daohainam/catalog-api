@@ -16,9 +16,8 @@ public static class ApplicationServiceExtensions
                 new UrlSegmentApiVersionReader(),
                 new HeaderApiVersionReader("X-Version"));
         });
-        builder.Services.AddAutoMapper(typeof(ModelProfile));
 
-        builder.AddNpgsqlDbContext<CatalogContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
+        builder.AddNpgsqlDbContext<ProductCatalogDbContext>("catalogdb", configureDbContextOptions: dbContextOptionsBuilder =>
         {
             dbContextOptionsBuilder.UseNpgsql(builder =>
             {

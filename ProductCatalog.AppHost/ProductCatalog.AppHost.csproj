@@ -1,6 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+	<Sdk Name="Aspire.AppHost.Sdk" Version="9.5.2" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,15 +12,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.0.0" />
-    <PackageReference Include="Aspire.Hosting.Redis" Version="9.0.0" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.Elasticsearch" Version="9.5.0" />
+    <PackageReference Include="Aspire.Hosting.Kafka" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.5.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ProductCatalog.Api.MigrationService\ProductCatalog.Api.MigrationService.csproj" />
     <ProjectReference Include="..\ProductCatalog.Api\ProductCatalog.Api.csproj" />
     <ProjectReference Include="..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\ProductCatalog.SearchSyncService\ProductCatalog.SearchSyncService.csproj" />
   </ItemGroup>
 
 </Project>

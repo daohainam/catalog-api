@@ -4,16 +4,14 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-ProductCatalog.Api.MigrationService-4f4c642a-35aa-4e21-bee4-7ee935a9e767</UserSecretsId>
+    <UserSecretsId>dotnet-ProductCatalog.SearchSyncService-e11024dd-4e9e-4205-9bb3-001959e4fea1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj" />
     <ProjectReference Include="..\ProductCatalog.ServiceDefaults\ProductCatalog.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

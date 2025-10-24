@@ -26,12 +26,19 @@ var migrationService = builder.AddProject<Projects.ProductCatalog_Api_MigrationS
     .WithReference(catalogDb).WaitFor(catalogDb);
 
 var searchSyncService = builder.AddProject<Projects.ProductCatalog_SearchSyncService>("productcatalog-searchsyncservice")
+    .WithReference(kafka)
+    .WithReference(elasticsearch)
+    .WaitFor(kafka)
+    .WaitFor(elasticsearch);
+
+var outboxService = builder.AddProject<Projects.ProductCatalog_OutboxService>("productcatalog-outboxservice")
     .WithReference(catalogDb)
     .WithReference(kafka)
     .WaitFor(kafka)
     .WaitForCompletion(migrationService);
 
 builder.AddProject<Projects.ProductCatalog_Api>("catalog-api")
-    .WithReference(catalogDb).WaitFor(searchSyncService);
+    .WithReference(catalogDb).WaitFor(outboxService);
+
 
 builder.Build().Run();

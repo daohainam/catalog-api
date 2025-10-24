@@ -22,6 +22,7 @@
     <ProjectReference Include="..\ProductCatalog.Api.MigrationService\ProductCatalog.Api.MigrationService.csproj" />
     <ProjectReference Include="..\ProductCatalog.Api\ProductCatalog.Api.csproj" />
     <ProjectReference Include="..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\ProductCatalog.OutboxService\ProductCatalog.OutboxService.csproj" />
     <ProjectReference Include="..\ProductCatalog.SearchSyncService\ProductCatalog.SearchSyncService.csproj" />
   </ItemGroup>
 

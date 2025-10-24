@@ -2,8 +2,10 @@
 using EventBus.Events;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using ProductCatalog.Infrastructure.Entity;
+using System.Text.Json;
 
-namespace ProductCatalog.SearchSyncService;
+namespace ProductCatalog.OutboxService;
 
 internal class TransactionalOutboxLogTailingService : BackgroundService
 {
@@ -21,7 +23,6 @@ internal class TransactionalOutboxLogTailingService : BackgroundService
         this.serviceScopeFactory = serviceScopeFactory;
         logger = loggerFactory.CreateLogger<TransactionalOutboxLogTailingService>();
     }
-
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

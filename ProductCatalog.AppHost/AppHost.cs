@@ -25,7 +25,7 @@ var catalogDb = postgres.AddDatabase("catalogdb", "catalog");
 var migrationService = builder.AddProject<Projects.ProductCatalog_Api_MigrationService>("catalog-api-migrationservice")
     .WithReference(catalogDb).WaitFor(catalogDb);
 
-var searchSyncService = builder.AddProject<Projects.ProductCatalog_SearchSyncService>("catalog-api-searchsyncservice")
+builder.AddProject<Projects.ProductCatalog_SearchSyncService>("catalog-api-searchsyncservice")
     .WithReference(kafka)
     .WithReference(elasticsearch)
     .WaitFor(kafka)
@@ -41,5 +41,8 @@ var outboxService = builder.AddProject<Projects.ProductCatalog_OutboxService>("c
 builder.AddProject<Projects.ProductCatalog_Api>("catalog-api")
     .WithReference(catalogDb).WaitFor(outboxService);
 
+builder.AddProject<Projects.ProductCatalog_SearchApi>("catalog-api-searchapi")
+    .WithReference(elasticsearch)
+    .WaitFor(elasticsearch);
 
 builder.Build().Run();

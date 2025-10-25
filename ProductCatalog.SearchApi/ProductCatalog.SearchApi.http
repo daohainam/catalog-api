@@ -1,0 +1,6 @@
+@ProductCatalog.SearchService_HostAddress = http://localhost:5049
+
+GET {{ProductCatalog.SearchService_HostAddress}}/api/v1/products/search?query=sample&offset=0&limit=10
+Accept: application/json
+
+###

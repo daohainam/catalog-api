@@ -9,9 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
+	<PackageReference Include="Aspire.Confluent.Kafka" Version="9.5.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EventBus\EventBus.csproj" />
+    <ProjectReference Include="..\ProductCatalog.Events\ProductCatalog.Events.csproj" />
     <ProjectReference Include="..\ProductCatalog.ServiceDefaults\ProductCatalog.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

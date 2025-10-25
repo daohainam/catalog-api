@@ -1,4 +1,6 @@
-﻿namespace ProductCatalog.Events;
+﻿using EventBus.Events;
+
+namespace ProductCatalog.Events;
 
 public class ProductCreatedEvent: IntegrationEvent
 {

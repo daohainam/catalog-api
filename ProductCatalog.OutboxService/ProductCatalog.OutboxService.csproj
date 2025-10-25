@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventBus.Kafka\EventBus.Kafka.csproj" />
     <ProjectReference Include="..\EventBus\EventBus.csproj" />
+    <ProjectReference Include="..\ProductCatalog.Events\ProductCatalog.Events.csproj" />
     <ProjectReference Include="..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj" />
     <ProjectReference Include="..\ProductCatalog.ServiceDefaults\ProductCatalog.ServiceDefaults.csproj" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.2" />

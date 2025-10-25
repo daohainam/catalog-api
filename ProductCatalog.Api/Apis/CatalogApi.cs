@@ -496,6 +496,9 @@ public static class CatalogApi
             Payload = JsonSerializer.Serialize(evt),
         });
 
+        await services.DbContext.Products.AddAsync(product);
+        await services.DbContext.SaveChangesAsync();
+
         return TypedResults.Ok(product);
     }
 

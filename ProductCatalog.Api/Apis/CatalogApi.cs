@@ -7,7 +7,7 @@ public static class CatalogApi
 
     public static IEndpointRouteBuilder MapCatalogApi(this IEndpointRouteBuilder builder)
     {
-        builder.MapGroup("/api/bff/v1")
+        builder.MapGroup("/api/v1")
               .MapCatalogApi()
               .WithTags("Product Catalog Api");
 

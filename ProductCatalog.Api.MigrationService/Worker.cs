@@ -24,6 +24,10 @@ IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
 
             await EnsureDatabaseAsync(dbContext, cancellationToken);
             await RunMigrationAsync(dbContext, cancellationToken);
+
+            // Create trigger for notifying outbox changes
+            await dbContext.Database.ExecuteSqlAsync($"CREATE OR REPLACE FUNCTION notify_outbox_change() RETURNS trigger AS $$\r\nBEGIN\r\n  PERFORM pg_notify('outbox_channel', row_to_json(NEW)::text);\r\n  RETURN NEW;\r\nEND;\r\n$$ LANGUAGE plpgsql;\r\n\r\nCREATE OR REPLACE TRIGGER outbox_change_trigger\r\nAFTER INSERT ON \"LogTailingOutboxMessages\"\r\nFOR EACH ROW EXECUTE FUNCTION notify_outbox_change();", cancellationToken: cancellationToken);
+
             await SeedDataAsync(dbContext, cancellationToken);
         }
         catch (Exception ex)

@@ -49,17 +49,17 @@ public static class KafkaEventBusExtensions
         return builder;
     }
 
-    public static IHostApplicationBuilder AddKafkaEventConsumer(this IHostApplicationBuilder builder, Action<EventHandlingWorkerOptions>? configureOptions = null)
-    {
-        var options = new EventHandlingWorkerOptions();
-        configureOptions?.Invoke(options);
+    //public static IHostApplicationBuilder AddKafkaEventConsumer(this IHostApplicationBuilder builder, Action<EventHandlingWorkerOptions>? configureOptions = null)
+    //{
+    //    var options = new EventHandlingWorkerOptions();
+    //    configureOptions?.Invoke(options);
 
-        builder.AddKafkaMessageEnvelopConsumer(options.KafkaGroupId);
-        builder.Services.AddSingleton(options);
-        builder.Services.AddSingleton(services => options.IntegrationEventFactory);
-        builder.Services.AddHostedService<EventHandlingService>();
-        return builder;
-    }
+    //    builder.AddKafkaMessageEnvelopConsumer(options.KafkaGroupId);
+    //    builder.Services.AddSingleton(options);
+    //    builder.Services.AddSingleton(services => options.IntegrationEventFactory);
+    //    builder.Services.AddHostedService<EventHandlingService>();
+    //    return builder;
+    //}
 
     public static bool IsEvent<T1>(this IntegrationEvent @event)
     {

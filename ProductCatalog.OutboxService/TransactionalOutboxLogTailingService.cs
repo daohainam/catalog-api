@@ -2,6 +2,7 @@
 using EventBus.Events;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using ProductCatalog.Infrastructure.Data;
 using ProductCatalog.Infrastructure.Entity;
 using System.Text.Json;
 
@@ -29,7 +30,7 @@ internal class TransactionalOutboxLogTailingService : BackgroundService
         logger.LogInformation("Starting TransactionOutbox log tailing service...");
 
         using IServiceScope scope = serviceScopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<OutboxDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
 
         while (!stoppingToken.IsCancellationRequested)
         {

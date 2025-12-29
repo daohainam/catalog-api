@@ -55,6 +55,7 @@ public class VariantInfo
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; }
+    public bool InStock { get; set; }
     public List<VariantDimensionValueInfo> DimensionValues { get; set; } = [];
 
 }

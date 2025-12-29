@@ -53,6 +53,7 @@ public static class ProductEsMapper
                 Sku = v.Sku,
                 BarCode = v.BarCode,
                 Price = v.Price,
+                InStock = v.InStock,
                 IsActive = v.IsActive,
                 CreatedAt = v.CreatedAt,
                 UpdatedAt = v.UpdatedAt,

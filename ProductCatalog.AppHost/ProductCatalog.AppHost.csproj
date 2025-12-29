@@ -1,23 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<Sdk Name="Aspire.AppHost.Sdk" Version="9.5.2" />
-
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.1.0" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsAspireHost>true</IsAspireHost>
     <UserSecretsId>aa2dd40c-5370-4000-a461-8e87a215d437</UserSecretsId>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
-    <PackageReference Include="Aspire.Hosting.Elasticsearch" Version="9.5.0" />
-    <PackageReference Include="Aspire.Hosting.Kafka" Version="9.5.2" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.Elasticsearch" Version="13.0.0" />
+    <PackageReference Include="Aspire.Hosting.Kafka" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.19.13" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ProductCatalog.Api.MigrationService\ProductCatalog.Api.MigrationService.csproj" />
     <ProjectReference Include="..\ProductCatalog.Api\ProductCatalog.Api.csproj" />
@@ -26,5 +22,4 @@
     <ProjectReference Include="..\ProductCatalog.SearchApi\ProductCatalog.SearchApi.csproj" />
     <ProjectReference Include="..\ProductCatalog.SearchSyncService\ProductCatalog.SearchSyncService.csproj" />
   </ItemGroup>
-
 </Project>

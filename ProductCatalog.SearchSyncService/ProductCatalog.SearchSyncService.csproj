@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-ProductCatalog.SearchSyncService-e11024dd-4e9e-4205-9bb3-001959e4fea1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Aspire.Confluent.Kafka" Version="9.5.2" />
-	<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
-	<PackageReference Include="Aspire.Elastic.Clients.Elasticsearch" Version="9.5.0" />
+	<PackageReference Include="Aspire.Confluent.Kafka" Version="13.1.0" />
+	<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+	<PackageReference Include="Aspire.Elastic.Clients.Elasticsearch" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,13 +11,16 @@ public class ElasticsearchIndexInitializer
 {
     private readonly ElasticsearchClient _client;
     private readonly ILogger<ElasticsearchIndexInitializer> _logger;
+    private readonly ElasticsearchIndexOptions _options;
 
     public ElasticsearchIndexInitializer(
-        ElasticsearchClient client, 
-        ILogger<ElasticsearchIndexInitializer> logger)
+        ElasticsearchClient client,
+        ILogger<ElasticsearchIndexInitializer> logger,
+        ElasticsearchIndexOptions? options = null)
     {
         _client = client;
         _logger = logger;
+        _options = options ?? new ElasticsearchIndexOptions();
     }
 
     /// <summary>
@@ -57,13 +60,14 @@ public class ElasticsearchIndexInitializer
             }
             
             _logger.LogInformation("Creating Elasticsearch product index with optimized mappings...");
+            _logger.LogInformation("Index settings: {shards} shards, {replicas} replicas, {refresh} refresh interval",
+                _options.NumberOfShards, _options.NumberOfReplicas, _options.RefreshInterval);
             
-            var createResponse = await ElasticsearchIndexConfiguration.CreateProductIndexAsync(_client, cancellationToken);
+            var createResponse = await ElasticsearchIndexConfiguration.CreateProductIndexAsync(_client, _options, cancellationToken);
             
             if (createResponse.IsValidResponse)
             {
                 _logger.LogInformation("Product index created successfully with optimized mappings");
-                _logger.LogInformation("Index settings: 3 shards, 1 replica, 30s refresh interval");
                 _logger.LogInformation("Variants configured as nested type for complex queries");
                 _logger.LogInformation("Prices stored as scaled_float for efficient storage");
             }

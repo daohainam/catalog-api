@@ -60,12 +60,19 @@ Benefits:
 
 ### 3. Index Settings
 
-```csharp
-Settings:
-  NumberOfShards: 3        // Distribute load across multiple shards
-  NumberOfReplicas: 1      // High availability with one replica
-  RefreshInterval: 30s     // Balance between indexing speed and search visibility
+```json
+{
+  "Elasticsearch": {
+    "Index": {
+      "NumberOfShards": 3,
+      "NumberOfReplicas": 1,
+      "RefreshInterval": "30s"
+    }
+  }
+}
 ```
+
+These settings are configurable via `appsettings.json` or environment variables.
 
 #### Shard Configuration
 - **3 shards**: Distributes the load across multiple nodes for better query parallelization
@@ -163,6 +170,34 @@ Query = q => q.Term(t => t.Field("brand_id").Value(brandId))
 - If CPU is bottleneck: Add more nodes
 
 ## Index Management
+
+### Configuration
+
+Index settings can be configured via `appsettings.json`:
+
+```json
+{
+  "Elasticsearch": {
+    "Index": {
+      "NumberOfShards": 3,
+      "NumberOfReplicas": 1,
+      "RefreshInterval": "30s"
+    }
+  }
+}
+```
+
+Or via environment variables:
+```bash
+Elasticsearch__Index__NumberOfShards=5
+Elasticsearch__Index__NumberOfReplicas=2
+Elasticsearch__Index__RefreshInterval=10s
+```
+
+**Tuning Guidelines:**
+- **NumberOfShards**: Increase for larger datasets (keep each shard 20-50GB). Default: 3
+- **NumberOfReplicas**: Increase for higher read throughput. Default: 1
+- **RefreshInterval**: Decrease for more real-time search, increase for faster indexing. Default: "30s"
 
 ### Creating the Index
 The index is automatically created on application startup with optimized mappings:

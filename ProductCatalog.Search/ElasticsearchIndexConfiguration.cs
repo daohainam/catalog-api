@@ -5,6 +5,31 @@ using Elastic.Clients.Elasticsearch.Mapping;
 namespace ProductCatalog.Search;
 
 /// <summary>
+/// Configuration options for Elasticsearch product index.
+/// </summary>
+public class ElasticsearchIndexOptions
+{
+    /// <summary>
+    /// Number of primary shards for the index. Default is 3.
+    /// Increase for larger datasets (each shard should be 20-50GB max).
+    /// </summary>
+    public int NumberOfShards { get; set; } = 3;
+
+    /// <summary>
+    /// Number of replica shards. Default is 1.
+    /// Increase for higher read throughput and better availability.
+    /// </summary>
+    public int NumberOfReplicas { get; set; } = 1;
+
+    /// <summary>
+    /// How often the index should be refreshed. Default is "30s".
+    /// Lower values = more real-time search but slower indexing.
+    /// Higher values = faster indexing but less real-time search.
+    /// </summary>
+    public string RefreshInterval { get; set; } = "30s";
+}
+
+/// <summary>
 /// Elasticsearch index configuration optimized for high-volume product catalog queries.
 /// This provides explicit mapping configuration to optimize storage and query performance.
 /// </summary>
@@ -22,16 +47,19 @@ public static class ElasticsearchIndexConfiguration
     /// - Text + keyword multi-field for sortable search fields
     /// </summary>
     public static async Task<CreateIndexResponse> CreateProductIndexAsync(
-        ElasticsearchClient client, 
+        ElasticsearchClient client,
+        ElasticsearchIndexOptions? options = null,
         CancellationToken cancellationToken = default)
     {
+        options ??= new ElasticsearchIndexOptions();
+
         var createIndexRequest = new CreateIndexRequest(IndexName)
         {
             Settings = new IndexSettings
             {
-                NumberOfShards = 3, // Distribute load for high query volume
-                NumberOfReplicas = 1, // High availability
-                RefreshInterval = new Elastic.Clients.Elasticsearch.Duration("30s") // Optimize for indexing throughput
+                NumberOfShards = options.NumberOfShards,
+                NumberOfReplicas = options.NumberOfReplicas,
+                RefreshInterval = new Elastic.Clients.Elasticsearch.Duration(options.RefreshInterval)
             },
             Mappings = new TypeMapping
             {

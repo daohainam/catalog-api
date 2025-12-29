@@ -18,6 +18,11 @@ public static class ApplicationServiceExtensions
             }
         );
 
+        // Register index configuration options
+        var indexOptions = new ElasticsearchIndexOptions();
+        builder.Configuration.GetSection("Elasticsearch:Index").Bind(indexOptions);
+        builder.Services.AddSingleton(indexOptions);
+
         // Register index initializer for creating optimized index
         builder.Services.AddSingleton<ElasticsearchIndexInitializer>();
 

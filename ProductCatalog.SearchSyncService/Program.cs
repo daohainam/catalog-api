@@ -24,6 +24,14 @@ builder.AddElasticsearchClient(connectionName: "elasticsearch",
     }
 );
 
+// Register index configuration options
+var indexOptions = new ElasticsearchIndexOptions();
+builder.Configuration.GetSection("Elasticsearch:Index").Bind(indexOptions);
+builder.Services.AddSingleton(indexOptions);
+
+// Register index initializer for creating optimized index on startup
+builder.Services.AddSingleton<ElasticsearchIndexInitializer>();
+
 // Register event handlers
 builder.Services.AddSingleton<IEventHandlerFactory, EventHandlerFactory>();
 builder.Services.AddTransient<ProductCreatedEventHandler>();
@@ -32,4 +40,23 @@ builder.Services.AddTransient<ProductCreatedEventHandler>();
 builder.Services.AddHostedService<EventHandlingService>();
 
 var host = builder.Build();
+
+// Initialize Elasticsearch index with optimized mappings on startup
+try
+{
+    using var scope = host.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var indexInitializer = scope.ServiceProvider.GetRequiredService<ElasticsearchIndexInitializer>();
+    
+    logger.LogInformation("Initializing Elasticsearch index...");
+    await indexInitializer.InitializeAsync(recreateIfExists: false);
+    logger.LogInformation("Elasticsearch index initialized successfully");
+}
+catch (Exception ex)
+{
+    var logger = host.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Failed to initialize Elasticsearch index. Application will not start.");
+    throw;
+}
+
 host.Run();

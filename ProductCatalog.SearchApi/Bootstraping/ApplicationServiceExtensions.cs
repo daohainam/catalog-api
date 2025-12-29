@@ -18,6 +18,9 @@ public static class ApplicationServiceExtensions
             }
         );
 
+        // Register index initializer for creating optimized index
+        builder.Services.AddSingleton<ElasticsearchIndexInitializer>();
+
         return builder;
     }
 }

@@ -24,6 +24,9 @@ builder.AddElasticsearchClient(connectionName: "elasticsearch",
     }
 );
 
+// Register index initializer for creating optimized index on startup
+builder.Services.AddSingleton<ElasticsearchIndexInitializer>();
+
 // Register event handlers
 builder.Services.AddSingleton<IEventHandlerFactory, EventHandlerFactory>();
 builder.Services.AddTransient<ProductCreatedEventHandler>();
@@ -32,4 +35,12 @@ builder.Services.AddTransient<ProductCreatedEventHandler>();
 builder.Services.AddHostedService<EventHandlingService>();
 
 var host = builder.Build();
+
+// Initialize Elasticsearch index with optimized mappings on startup
+using (var scope = host.Services.CreateScope())
+{
+    var indexInitializer = scope.ServiceProvider.GetRequiredService<ElasticsearchIndexInitializer>();
+    await indexInitializer.InitializeAsync(recreateIfExists: false);
+}
+
 host.Run();

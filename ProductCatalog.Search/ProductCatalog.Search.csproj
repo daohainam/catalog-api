@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.16.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ProductCatalog.Events\ProductCatalog.Events.csproj" />
   </ItemGroup>
 

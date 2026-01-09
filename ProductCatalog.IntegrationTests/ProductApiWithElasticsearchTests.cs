@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Elastic.Clients.Elasticsearch;
 using FluentAssertions;
@@ -10,7 +11,6 @@ namespace ProductCatalog.IntegrationTests;
 
 public class ProductApiWithElasticsearchTests : IAsyncLifetime
 {
-    private DistributedApplicationTestingBuilder? _builder;
     private DistributedApplication? _app;
     private HttpClient? _apiClient;
     private HttpClient? _searchApiClient;
@@ -19,11 +19,11 @@ public class ProductApiWithElasticsearchTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Create an Aspire testing builder
-        _builder = await DistributedApplicationTestingBuilder
+        var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.ProductCatalog_AppHost>();
 
         // Build the application
-        _app = await _builder.BuildAsync();
+        _app = await builder.BuildAsync();
 
         // Start the application
         await _app.StartAsync();
@@ -34,7 +34,7 @@ public class ProductApiWithElasticsearchTests : IAsyncLifetime
 
         // Get Elasticsearch client
         var elasticsearchEndpoint = _app.GetEndpoint("elasticsearch");
-        var settings = new ElasticsearchClientSettings(new Uri(elasticsearchEndpoint))
+        var settings = new ElasticsearchClientSettings(elasticsearchEndpoint)
             .DefaultIndex("products");
         _elasticsearchClient = new ElasticsearchClient(settings);
 

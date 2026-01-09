@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using FluentAssertions;
 using ProductCatalog.Events;
@@ -9,18 +10,17 @@ namespace ProductCatalog.IntegrationTests;
 
 public class CatalogApiIntegrationTests : IAsyncLifetime
 {
-    private DistributedApplicationTestingBuilder? _builder;
     private DistributedApplication? _app;
     private HttpClient? _httpClient;
 
     public async Task InitializeAsync()
     {
         // Create an Aspire testing builder
-        _builder = await DistributedApplicationTestingBuilder
+        var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.ProductCatalog_AppHost>();
 
         // Build the application
-        _app = await _builder.BuildAsync();
+        _app = await builder.BuildAsync();
 
         // Start the application
         await _app.StartAsync();

@@ -9,6 +9,7 @@ public static class EventExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         var brand = await services.DbContext.Brands
+            .AsNoTracking()
             .Where(b => b.Id == product.BrandId)
             .SingleOrDefaultAsync(services.CancellationToken);
         
@@ -18,6 +19,7 @@ public static class EventExtensions
         }
 
         var category = await services.DbContext.Categories
+            .AsNoTracking()
             .Where(c => c.Id == product.CategoryId)
             .SingleOrDefaultAsync(services.CancellationToken);
         
@@ -27,7 +29,9 @@ public static class EventExtensions
         }
 
         var dimensionIds = product.Dimensions.Select(d => d.DimensionId).ToList();
-        var dimensions = await services.DbContext.Dimensions.Where(d => dimensionIds.Contains(d.Id))
+        var dimensions = await services.DbContext.Dimensions
+            .AsNoTracking()
+            .Where(d => dimensionIds.Contains(d.Id))
             .Include(d => d.Values)
             .ToListAsync(services.CancellationToken);
 

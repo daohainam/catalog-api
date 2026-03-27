@@ -43,9 +43,11 @@ public static class CatalogApi
         {
             var (validatedOffset, validatedLimit) = ValidatePagination(offset, limit);
             return await services.DbContext.Dimensions
+            .AsNoTracking()
             .Include(d => d.Values)
+            .OrderBy(d => d.Id)
             .Skip(validatedOffset).Take(validatedLimit)
-            .ToListAsync();
+            .ToListAsync(services.CancellationToken);
         });
 
         #region Products and Variants
@@ -58,12 +60,14 @@ public static class CatalogApi
         {
             var (validatedOffset, validatedLimit) = ValidatePagination(offset, limit);
             return await services.DbContext.Products
+            .AsNoTracking()
             // .Where(p => !p.IsDeleted) // in this in internal API, we return all products except deleted ones
-            .Skip(validatedOffset).Take(validatedLimit).ToListAsync();
+            .OrderBy(p => p.Id)
+            .Skip(validatedOffset).Take(validatedLimit).ToListAsync(services.CancellationToken);
         });
         productApiGroup.MapGet("/{productId:guid}", async ([AsParameters] ApiServices services, Guid productId) =>
         {
-            return await services.DbContext.Products.Include(p => p.Variants).ThenInclude(d => d.DimensionValues).Where(p => p.Id == productId).SingleOrDefaultAsync();
+            return await services.DbContext.Products.AsNoTracking().Include(p => p.Variants).ThenInclude(d => d.DimensionValues).Where(p => p.Id == productId).SingleOrDefaultAsync(services.CancellationToken);
         });
         productApiGroup.MapGet("/{productId:guid}/dimensions", async ([AsParameters] ApiServices services, Guid productId) =>
         {
@@ -72,7 +76,7 @@ public static class CatalogApi
                              where pd.ProductId == productId
                              select d;
 
-            return await dimensions.Include(d => d.Values).ToListAsync();
+            return await dimensions.AsNoTracking().Include(d => d.Values).ToListAsync(services.CancellationToken);
         });
         productApiGroup.MapPost("/{productId:guid}/dimensions", AddProductDimension);
 
@@ -114,7 +118,7 @@ public static class CatalogApi
         existingBrand.LogoUrl = brand.LogoUrl;
 
         services.DbContext.Brands.Update(existingBrand);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(existingBrand);
     }
@@ -134,8 +138,10 @@ public static class CatalogApi
     {
         var (validatedOffset, validatedLimit) = ValidatePagination(offset, limit);
         var brands = await services.DbContext.Brands
+            .AsNoTracking()
+            .OrderBy(b => b.Id)
             .Skip(validatedOffset).Take(validatedLimit)
-            .ToArrayAsync();
+            .ToArrayAsync(services.CancellationToken);
 
         return TypedResults.Ok(brands);
     }
@@ -171,7 +177,7 @@ public static class CatalogApi
             brand.Id = Guid.CreateVersion7();
 
         await services.DbContext.Brands.AddAsync(brand);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(brand);
     }
@@ -200,7 +206,7 @@ public static class CatalogApi
         existingVariant.UpdatedAt = DateTime.UtcNow;
 
         services.DbContext.Variants.Update(existingVariant);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
         return TypedResults.Ok(existingVariant);
     }
 
@@ -220,7 +226,9 @@ public static class CatalogApi
         var dimensions = await services.DbContext.ProductDimensions.Where(pd => pd.ProductId == productId)
                                     .Include(d => d.Dimension).ThenInclude(dv => dv.Values)
                                     .Select(pd => pd.Dimension)
-                                    .ToListAsync();
+                                    .ToListAsync(services.CancellationToken);
+
+        var allDimensionValues = new List<VariantDimensionValue>();
 
         foreach (var variant in variants)
         {
@@ -239,10 +247,10 @@ public static class CatalogApi
                 return TypedResults.BadRequest("All product dimensions must be specified for the variant.");
             }
 
+            var variantDimLookup = variant.DimensionValues.ToDictionary(dv => dv.DimensionId);
             foreach (var dim in dimensions)
             {
-                var variantDimValue = variant.DimensionValues.FirstOrDefault(dv => dv.DimensionId == dim.Id);
-                if (variantDimValue == null)
+                if (!variantDimLookup.TryGetValue(dim.Id, out var variantDimValue))
                 {
                     return TypedResults.BadRequest($"Dimension '{dim.Id}' must be specified for the variant.");
                 }
@@ -252,27 +260,32 @@ public static class CatalogApi
                 }
             }
 
-            await services.DbContext.Variants.AddAsync(variant);
             foreach (var dimValue in variant.DimensionValues)
             {
                 dimValue.VariantId = variant.Id;
-                await services.DbContext.VariantDimensionValues.AddAsync(dimValue);
+                allDimensionValues.Add(dimValue);
             }
         }
 
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.Variants.AddRangeAsync(variants, services.CancellationToken);
+        if (allDimensionValues.Count > 0)
+        {
+            await services.DbContext.VariantDimensionValues.AddRangeAsync(allDimensionValues, services.CancellationToken);
+        }
+
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
         return TypedResults.Ok(variants);
     }
 
     private static async Task<Results<Ok<List<Variant>>, NotFound>> FindVariants([AsParameters] ApiServices services, Guid productId)
     {
-        var product = await services.DbContext.Products.FindAsync(productId);
-        if (product == null)
+        var productExists = await services.DbContext.Products.AnyAsync(p => p.Id == productId, services.CancellationToken);
+        if (!productExists)
         {
             return TypedResults.NotFound();
         }
 
-        var variants = await services.DbContext.Variants.Where(v => v.ProductId == productId).ToListAsync();
+        var variants = await services.DbContext.Variants.AsNoTracking().Where(v => v.ProductId == productId).ToListAsync(services.CancellationToken);
         return TypedResults.Ok(variants);
     }
     #endregion
@@ -291,19 +304,29 @@ public static class CatalogApi
         {
             if (string.IsNullOrEmpty(dimension.Id))
                 return TypedResults.BadRequest("Dimension Id is required.");
-
-            var existingDimension = await services.DbContext.ProductDimensions.FindAsync(productId, dimension.Id);
-            if (existingDimension == null)
-            {
-                await services.DbContext.ProductDimensions.AddAsync(new ProductDimension()
-                {
-                    ProductId = productId,
-                    DimensionId = dimension.Id
-                });
-            }
         }
 
-        await services.DbContext.SaveChangesAsync();
+        var dimensionIds = dimensions.Select(d => d.Id).ToList();
+        var existingDimensionIds = await services.DbContext.ProductDimensions
+            .Where(pd => pd.ProductId == productId && dimensionIds.Contains(pd.DimensionId))
+            .Select(pd => pd.DimensionId)
+            .ToHashSetAsync(services.CancellationToken);
+
+        var newProductDimensions = dimensions
+            .Where(d => !existingDimensionIds.Contains(d.Id))
+            .Select(d => new ProductDimension
+            {
+                ProductId = productId,
+                DimensionId = d.Id
+            })
+            .ToList();
+
+        if (newProductDimensions.Count > 0)
+        {
+            await services.DbContext.ProductDimensions.AddRangeAsync(newProductDimensions, services.CancellationToken);
+        }
+
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok();
     }
@@ -323,7 +346,7 @@ public static class CatalogApi
             group.Id = Guid.CreateVersion7();
 
         await services.DbContext.Groups.AddAsync(group);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(group);
     }
@@ -349,7 +372,7 @@ public static class CatalogApi
             category.Id = Guid.CreateVersion7();
 
         await services.DbContext.Categories.AddAsync(category);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(category);
     }
@@ -367,10 +390,9 @@ public static class CatalogApi
                 dimensionValue.Id = Guid.CreateVersion7();
 
             dimensionValue.DimensionId = id;
-
-            await services.DbContext.DimensionValues.AddAsync(dimensionValue);
         }
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.DimensionValues.AddRangeAsync(dimensionValues, services.CancellationToken);
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(dimensionValues);
     }
@@ -411,7 +433,7 @@ public static class CatalogApi
             }
         }
 
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(dimensions);
     }
@@ -471,6 +493,10 @@ public static class CatalogApi
 
         if (product.Variants != null && product.Variants.Count > 0)
         {
+            var productDimIds = product.Dimensions != null
+                ? new HashSet<string>(product.Dimensions.Select(d => d.DimensionId))
+                : new HashSet<string>();
+
             foreach (var variant in product.Variants)
             {
                 if (variant.Id == Guid.Empty)
@@ -482,8 +508,6 @@ public static class CatalogApi
                 variant.BarCode ??= string.Empty;
                 variant.Sku ??= string.Empty;
 
-                await services.DbContext.Variants.AddAsync(variant);
-
                 if (variant.DimensionValues != null && variant.DimensionValues.Count > 0)
                 {
                     if (product.Dimensions == null || product.Dimensions.Count != variant.DimensionValues.Count)
@@ -491,7 +515,8 @@ public static class CatalogApi
                         return TypedResults.BadRequest("All product dimensions must be specified for the variant.");
                     }
 
-                    if (product.Dimensions.Any(d => !variant.DimensionValues.Any(dv => dv.DimensionId == d.DimensionId)))
+                    var variantDimIds = new HashSet<string>(variant.DimensionValues.Select(dv => dv.DimensionId));
+                    if (!productDimIds.SetEquals(variantDimIds))
                     {
                         return TypedResults.BadRequest("All product dimensions must be specified for the variant.");
                     }
@@ -518,7 +543,7 @@ public static class CatalogApi
         });
 
         await services.DbContext.Products.AddAsync(product);
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(product);
     }
@@ -539,7 +564,7 @@ public static class CatalogApi
 
         services.DbContext.Products.Update(existingProduct);
 
-        await services.DbContext.SaveChangesAsync();
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok();
     }

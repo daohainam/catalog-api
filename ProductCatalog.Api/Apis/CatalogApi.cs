@@ -267,10 +267,10 @@ public static class CatalogApi
             }
         }
 
-        await services.DbContext.Variants.AddRangeAsync(variants);
+        await services.DbContext.Variants.AddRangeAsync(variants, services.CancellationToken);
         if (allDimensionValues.Count > 0)
         {
-            await services.DbContext.VariantDimensionValues.AddRangeAsync(allDimensionValues);
+            await services.DbContext.VariantDimensionValues.AddRangeAsync(allDimensionValues, services.CancellationToken);
         }
 
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
@@ -323,7 +323,7 @@ public static class CatalogApi
 
         if (newProductDimensions.Count > 0)
         {
-            await services.DbContext.ProductDimensions.AddRangeAsync(newProductDimensions);
+            await services.DbContext.ProductDimensions.AddRangeAsync(newProductDimensions, services.CancellationToken);
         }
 
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
@@ -391,7 +391,7 @@ public static class CatalogApi
 
             dimensionValue.DimensionId = id;
         }
-        await services.DbContext.DimensionValues.AddRangeAsync(dimensionValues);
+        await services.DbContext.DimensionValues.AddRangeAsync(dimensionValues, services.CancellationToken);
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
 
         return TypedResults.Ok(dimensionValues);

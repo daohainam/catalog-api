@@ -10,6 +10,7 @@ builder.AddApplicationServices();
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+app.UseRateLimiter();
 app.MapCatalogApi();
 
 if (app.Environment.IsDevelopment())

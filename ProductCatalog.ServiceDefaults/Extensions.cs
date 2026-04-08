@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -101,19 +102,54 @@ public static class Extensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
-        if (app.Environment.IsDevelopment())
+        // Use the built-in exception handler to return RFC 7807 Problem Details
+        // and prevent leaking stack traces in non-development environments.
+        app.UseExceptionHandler(exceptionApp =>
         {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
-            app.MapHealthChecks("/health");
-
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks("/alive", new HealthCheckOptions
+            exceptionApp.Run(async context =>
             {
-                Predicate = r => r.Tags.Contains("live")
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
+
+                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ProductCatalog.ServiceDefaults.ExceptionHandler");
+
+                var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                if (exceptionFeature?.Error is not null)
+                {
+                    var sanitizedMethod = context.Request.Method.Replace("\r", "").Replace("\n", "");
+                    var sanitizedPath = context.Request.Path.Value?.Replace("\r", "").Replace("\n", "") ?? "";
+                    logger.LogError(exceptionFeature.Error, "Unhandled exception for {Method} {Path}",
+                        sanitizedMethod, sanitizedPath);
+                }
+
+                var problemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "An unexpected error occurred.",
+                    Instance = context.Request.Path
+                };
+
+                // Include exception details only in development
+                if (app.Environment.IsDevelopment() && exceptionFeature?.Error is not null)
+                {
+                    problemDetails.Detail = exceptionFeature.Error.ToString();
+                }
+
+                await context.Response.WriteAsJsonAsync(problemDetails);
             });
-        }
+        });
+
+        // Health check endpoints are required for orchestrators and load balancers
+        // in all environments to determine service readiness and liveness.
+        // All health checks must pass for app to be considered ready to accept traffic after starting
+        app.MapHealthChecks("/health");
+
+        // Only health checks tagged with the "live" tag must pass for app to be considered alive
+        app.MapHealthChecks("/alive", new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
 
         return app;
     }

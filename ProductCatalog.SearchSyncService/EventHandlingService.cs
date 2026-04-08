@@ -62,6 +62,37 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
             }
         }
     }
+    private async Task<bool> RetryWithBackoffAsync(IEventHandler handler, IntegrationEvent evt, CancellationToken cancellationToken, string messageTypeName)
+    {
+        const int maxRetries = 3;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)); // 1s, 2s, 4s
+            logger.LogInformation("Retry attempt {attempt}/{maxRetries} for event type: {t} in {delay}s",
+                attempt, maxRetries, messageTypeName, delay.TotalSeconds);
+
+            await Task.Delay(delay, cancellationToken);
+
+            try
+            {
+                await handler.HandleAsync(evt, cancellationToken);
+                logger.LogInformation("Retry attempt {attempt} succeeded for event type: {t}", attempt, messageTypeName);
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // Don't retry on cancellation
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Retry attempt {attempt}/{maxRetries} failed for event type: {t}", attempt, maxRetries, messageTypeName);
+            }
+        }
+
+        return false;
+    }
+
     private async Task ProcessMessageAsync(IServiceProvider services, MessageEnvelop message, CancellationToken cancellationToken)
     {
         var evt = integrationEventFactory.CreateEvent(message.MessageTypeName, message.Message);
@@ -88,9 +119,12 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error handling event of type: {t}. This event will be skipped and may need manual intervention.", message.MessageTypeName);
-                    // TODO: Implement dead-letter queue or retry mechanism
-                    // For now, we log and continue to prevent blocking the consumer
+                    logger.LogWarning(ex, "Error handling event of type: {t}. Retrying with exponential backoff.", message.MessageTypeName);
+                    var handled = await RetryWithBackoffAsync(handler, evt, cancellationToken, message.MessageTypeName);
+                    if (!handled)
+                    {
+                        logger.LogError("Event of type: {t} failed after all retry attempts. This event will be skipped and may need manual intervention.", message.MessageTypeName);
+                    }
                 }
             }
             else

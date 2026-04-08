@@ -117,8 +117,10 @@ public static class Extensions
                 var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
                 if (exceptionFeature?.Error is not null)
                 {
+                    var sanitizedMethod = context.Request.Method.Replace("\r", "").Replace("\n", "");
+                    var sanitizedPath = context.Request.Path.Value?.Replace("\r", "").Replace("\n", "") ?? "";
                     logger.LogError(exceptionFeature.Error, "Unhandled exception for {Method} {Path}",
-                        context.Request.Method, context.Request.Path);
+                        sanitizedMethod, sanitizedPath);
                 }
 
                 var problemDetails = new Microsoft.AspNetCore.Mvc.ProblemDetails

@@ -68,13 +68,14 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2s, 4s, 8s
-            logger.LogInformation("Retry attempt {attempt}/{maxRetries} for event type: {t} after {delay}s",
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)); // 1s, 2s, 4s
+            logger.LogInformation("Retry attempt {attempt}/{maxRetries} for event type: {t} in {delay}s",
                 attempt, maxRetries, messageTypeName, delay.TotalSeconds);
+
+            await Task.Delay(delay, cancellationToken);
 
             try
             {
-                await Task.Delay(delay, cancellationToken);
                 await handler.HandleAsync(evt, cancellationToken);
                 logger.LogInformation("Retry attempt {attempt} succeeded for event type: {t}", attempt, messageTypeName);
                 return true;

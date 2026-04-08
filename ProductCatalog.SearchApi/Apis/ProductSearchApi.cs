@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using ProductCatalog.Search;
 
 namespace ProductCatalog.SearchApi.Apis;
@@ -11,7 +13,8 @@ public static class ProductSearchApi
     {
         builder.MapGroup("/api/v1")
               .MapSearchApi()
-              .WithTags("Product Search Api");
+              .WithTags("Product Search Api")
+              .RequireRateLimiting("fixed");
 
         return builder;
     }
@@ -72,9 +75,15 @@ public static class ProductSearchApi
 
         if (!searchResponse.IsValidResponse)
         {
+            apiServices.Logger.LogError("Elasticsearch search failed: {DebugInfo}", searchResponse.DebugInformation);
+
+            var detail = apiServices.Environment.IsDevelopment()
+                ? searchResponse.DebugInformation
+                : "An internal search error occurred. Please try again later.";
+
             return Results.Problem(
                 title: "Search failed",
-                detail: searchResponse.DebugInformation,
+                detail: detail,
                 statusCode: 500
             );
         }

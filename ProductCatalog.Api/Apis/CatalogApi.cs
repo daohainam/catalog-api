@@ -17,7 +17,8 @@ public static class CatalogApi
     {
         builder.MapGroup("/api/v1")
               .MapCatalogApi()
-              .WithTags("Product Catalog Api");
+              .WithTags("Product Catalog Api")
+              .RequireRateLimiting("fixed");
 
         return builder;
     }

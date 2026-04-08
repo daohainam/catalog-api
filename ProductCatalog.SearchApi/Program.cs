@@ -28,6 +28,7 @@ catch (Exception ex)
 }
 
 app.MapDefaultEndpoints();
+app.UseRateLimiter();
 app.MapSearchApi();
 
 app.Run();

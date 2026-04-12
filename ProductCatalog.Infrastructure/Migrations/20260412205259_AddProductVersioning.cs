@@ -16,7 +16,7 @@ namespace ProductCatalog.Infrastructure.Migrations
                 table: "Products",
                 type: "bigint",
                 nullable: false,
-                defaultValue: 0L);
+                defaultValue: 1L);
 
             migrationBuilder.CreateTable(
                 name: "ProductHistories",

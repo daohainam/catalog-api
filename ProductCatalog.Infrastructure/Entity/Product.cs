@@ -12,6 +12,7 @@ public class Product
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; }
     public bool IsDeleted { get; set; }
+    public long Version { get; set; } = 1;
     public Guid CategoryId { get; set; } = default!;
     public Category Category { get; set; } = default!;
     public List<Variant> Variants { get; set; } = [];

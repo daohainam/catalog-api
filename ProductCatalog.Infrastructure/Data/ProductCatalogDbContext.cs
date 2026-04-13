@@ -15,6 +15,7 @@ public class ProductCatalogDbContext(DbContextOptions<ProductCatalogDbContext> o
     public DbSet<Image> Images { get; internal set; }
     public DbSet<Brand> Brands { get; internal set; }
     public DbSet<GroupProduct> GroupProducts { get; internal set; }
+    public DbSet<ProductHistory> ProductHistories { get; internal set; } = default!;
     public DbSet<LogTailingOutboxMessage> LogTailingOutboxMessages { get; internal set; } = default!;
 
 
@@ -77,5 +78,14 @@ public class ProductCatalogDbContext(DbContextOptions<ProductCatalogDbContext> o
         modelBuilder.Entity<Category>()
             .HasIndex(c => c.UrlSlug)
             .HasDatabaseName("IX_Categories_UrlSlug");
+
+        modelBuilder.Entity<ProductHistory>()
+            .HasIndex(ph => ph.ProductId)
+            .HasDatabaseName("IX_ProductHistories_ProductId");
+
+        modelBuilder.Entity<ProductHistory>()
+            .HasIndex(ph => new { ph.ProductId, ph.Version })
+            .IsUnique()
+            .HasDatabaseName("IX_ProductHistories_ProductId_Version");
     }
 }

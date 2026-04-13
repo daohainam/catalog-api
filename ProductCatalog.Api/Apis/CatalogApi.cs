@@ -84,6 +84,10 @@ public static class CatalogApi
         productApiGroup.MapGet("/{productId:guid}/variants", FindVariants);
         productApiGroup.MapPost("/{productId:guid}/variants", CreateVariant);
         productApiGroup.MapPut("/{productId:guid}/variants/{variantId:guid}", UpdateVariant);
+
+        productApiGroup.MapGet("/{productId:guid}/history", GetProductHistory);
+        productApiGroup.MapGet("/{productId:guid}/history/{version:long}", GetProductHistoryByVersion);
+        productApiGroup.MapPost("/{productId:guid}/history/{version:long}/revert", RevertProduct);
         #endregion
 
         return group;
@@ -481,6 +485,7 @@ public static class CatalogApi
 
         product.CreatedAt = DateTime.UtcNow;
         product.UpdatedAt = DateTime.UtcNow;
+        product.Version = 1;
         product.UrlSlug ??= product.Id.ToString();
 
         if (product.Dimensions != null && product.Dimensions.Count > 0)
@@ -557,11 +562,39 @@ public static class CatalogApi
             return TypedResults.NotFound();
         }
 
+        // Save current product data to history before updating
+        var historyData = new
+        {
+            existingProduct.Id,
+            existingProduct.Name,
+            existingProduct.UrlSlug,
+            existingProduct.Description,
+            existingProduct.BrandId,
+            existingProduct.CategoryId,
+            existingProduct.CreatedAt,
+            existingProduct.UpdatedAt,
+            existingProduct.IsActive,
+            existingProduct.IsDeleted,
+            existingProduct.Version
+        };
+
+        var history = new ProductHistory
+        {
+            Id = Guid.CreateVersion7(),
+            ProductId = existingProduct.Id,
+            Version = existingProduct.Version,
+            ProductData = JsonSerializer.Serialize(historyData),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await services.DbContext.ProductHistories.AddAsync(history, services.CancellationToken);
+
         existingProduct.Name = product.Name;
         existingProduct.Description = product.Description;
         existingProduct.IsActive = product.IsActive;
         existingProduct.UpdatedAt = DateTime.UtcNow;
         existingProduct.CategoryId = product.CategoryId;
+        existingProduct.Version++;
 
         services.DbContext.Products.Update(existingProduct);
 
@@ -569,4 +602,109 @@ public static class CatalogApi
 
         return TypedResults.Ok();
     }
+
+    #region Product History
+    private static async Task<Results<Ok<List<ProductHistory>>, NotFound>> GetProductHistory(
+        [AsParameters] ApiServices services, Guid productId, [FromQuery] int? offset = 0, [FromQuery] int? limit = defaultPageSize)
+    {
+        var productExists = await services.DbContext.Products.AnyAsync(p => p.Id == productId, services.CancellationToken);
+        if (!productExists)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var (validatedOffset, validatedLimit) = ValidatePagination(offset, limit);
+
+        var history = await services.DbContext.ProductHistories
+            .AsNoTracking()
+            .Where(h => h.ProductId == productId)
+            .OrderByDescending(h => h.Version)
+            .Skip(validatedOffset)
+            .Take(validatedLimit)
+            .ToListAsync(services.CancellationToken);
+
+        return TypedResults.Ok(history);
+    }
+
+    private static async Task<Results<Ok<ProductHistory>, NotFound>> GetProductHistoryByVersion(
+        [AsParameters] ApiServices services, Guid productId, long version)
+    {
+        var history = await services.DbContext.ProductHistories
+            .AsNoTracking()
+            .Where(h => h.ProductId == productId && h.Version == version)
+            .SingleOrDefaultAsync(services.CancellationToken);
+
+        if (history == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        return TypedResults.Ok(history);
+    }
+
+    private static async Task<Results<Ok<Product>, NotFound, BadRequest<string>>> RevertProduct(
+        [AsParameters] ApiServices services, Guid productId, long version)
+    {
+        var existingProduct = await services.DbContext.Products.FindAsync(productId);
+        if (existingProduct == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var history = await services.DbContext.ProductHistories
+            .Where(h => h.ProductId == productId && h.Version == version)
+            .SingleOrDefaultAsync(services.CancellationToken);
+
+        if (history == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        // Deserialize the historical product data
+        var historicalData = JsonSerializer.Deserialize<JsonElement>(history.ProductData);
+
+        // Save current product data to history before reverting
+        var currentData = new
+        {
+            existingProduct.Id,
+            existingProduct.Name,
+            existingProduct.UrlSlug,
+            existingProduct.Description,
+            existingProduct.BrandId,
+            existingProduct.CategoryId,
+            existingProduct.CreatedAt,
+            existingProduct.UpdatedAt,
+            existingProduct.IsActive,
+            existingProduct.IsDeleted,
+            existingProduct.Version
+        };
+
+        var currentHistory = new ProductHistory
+        {
+            Id = Guid.CreateVersion7(),
+            ProductId = existingProduct.Id,
+            Version = existingProduct.Version,
+            ProductData = JsonSerializer.Serialize(currentData),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await services.DbContext.ProductHistories.AddAsync(currentHistory, services.CancellationToken);
+
+        // Revert the product fields from historical data
+        existingProduct.Name = historicalData.GetProperty("Name").GetString()!;
+        existingProduct.UrlSlug = historicalData.GetProperty("UrlSlug").GetString()!;
+        existingProduct.Description = historicalData.GetProperty("Description").GetString()!;
+        existingProduct.BrandId = historicalData.GetProperty("BrandId").GetGuid();
+        existingProduct.CategoryId = historicalData.GetProperty("CategoryId").GetGuid();
+        existingProduct.IsActive = historicalData.GetProperty("IsActive").GetBoolean();
+        existingProduct.IsDeleted = historicalData.GetProperty("IsDeleted").GetBoolean();
+        existingProduct.UpdatedAt = DateTime.UtcNow;
+        existingProduct.Version++;
+
+        services.DbContext.Products.Update(existingProduct);
+        await services.DbContext.SaveChangesAsync(services.CancellationToken);
+
+        return TypedResults.Ok(existingProduct);
+    }
+    #endregion
 }

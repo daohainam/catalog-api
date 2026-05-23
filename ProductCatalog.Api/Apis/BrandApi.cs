@@ -13,7 +13,7 @@ public static class BrandApi
         return group;
     }
 
-    private static async Task<Results<Ok<Brand>, BadRequest, BadRequest<string>>> UpdateBrand([AsParameters] ApiServices services, Guid brandId, Brand brand)
+    private static async Task<Results<Ok<Brand>, BadRequest, BadRequest<string>, NotFound>> UpdateBrand([AsParameters] ApiServices services, Guid brandId, Brand brand)
     {
         if (brand == null || brand.Id != brandId)
         {
@@ -23,7 +23,7 @@ public static class BrandApi
         var existingBrand = await services.DbContext.Brands.FindAsync(brandId);
         if (existingBrand == null)
         {
-            return TypedResults.BadRequest("Brand not found.");
+            return TypedResults.NotFound();
         }
 
         if (string.IsNullOrEmpty(brand.Name))

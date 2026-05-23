@@ -15,6 +15,8 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
     IServiceScopeFactory serviceScopeFactory,
     ILoggerFactory loggerFactory) : BackgroundService
 {
+    private const int MaxRetryAttempts = 3;
+
     private readonly IConsumer<string, MessageEnvelop> consumer = consumer;
     private readonly EventHandlingWorkerOptions options = options;
     private readonly IIntegrationEventFactory integrationEventFactory = integrationEventFactory;
@@ -67,13 +69,11 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
     }
     private async Task<bool> RetryWithBackoffAsync(IEventHandler handler, IntegrationEvent evt, CancellationToken cancellationToken, string messageTypeName)
     {
-        const int maxRetries = 3;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
             var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)); // 1s, 2s, 4s
             logger.LogInformation("Retry attempt {attempt}/{maxRetries} for event type: {t} in {delay}s",
-                attempt, maxRetries, messageTypeName, delay.TotalSeconds);
+                attempt, MaxRetryAttempts, messageTypeName, delay.TotalSeconds);
 
             await Task.Delay(delay, cancellationToken);
 
@@ -89,7 +89,7 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Retry attempt {attempt}/{maxRetries} failed for event type: {t}", attempt, maxRetries, messageTypeName);
+                logger.LogWarning(ex, "Retry attempt {attempt}/{maxRetries} failed for event type: {t}", attempt, MaxRetryAttempts, messageTypeName);
             }
         }
 
@@ -154,7 +154,7 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
                 Payload = message.Message,
                 ErrorMessage = lastException.Message,
                 StackTrace = lastException.StackTrace,
-                RetryCount = 3,
+                RetryCount = MaxRetryAttempts,
                 FailedAt = DateTime.UtcNow,
                 IsReprocessed = false
             };

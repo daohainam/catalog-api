@@ -9,6 +9,7 @@
 
   <ItemGroup>
 	<PackageReference Include="Aspire.Confluent.Kafka" Version="13.1.0" />
+	<PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.0" />
 	<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
 	<PackageReference Include="Aspire.Elastic.Clients.Elasticsearch" Version="13.0.0" />
   </ItemGroup>
@@ -16,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventBus\EventBus.csproj" />
     <ProjectReference Include="..\ProductCatalog.Events\ProductCatalog.Events.csproj" />
+    <ProjectReference Include="..\ProductCatalog.Infrastructure\ProductCatalog.Infrastructure.csproj" />
     <ProjectReference Include="..\ProductCatalog.Search\ProductCatalog.Search.csproj" />
     <ProjectReference Include="..\ProductCatalog.ServiceDefaults\ProductCatalog.ServiceDefaults.csproj" />
   </ItemGroup>

@@ -2,6 +2,9 @@ using Confluent.Kafka;
 using EventBus;
 using EventBus.Abstractions;
 using EventBus.Events;
+using Microsoft.EntityFrameworkCore;
+using ProductCatalog.Infrastructure.Data;
+using ProductCatalog.Infrastructure.Entity;
 using ProductCatalog.SearchSyncService.EventHandlers;
 
 namespace ProductCatalog.SearchSyncService;
@@ -22,7 +25,7 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            logger.LogInformation("Subcribing to topics [{topics}]...", string.Join(',', options.Topics));
+            logger.LogInformation("Subscribing to topics [{topics}]...", string.Join(',', options.Topics));
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -123,7 +126,8 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
                     var handled = await RetryWithBackoffAsync(handler, evt, cancellationToken, message.MessageTypeName);
                     if (!handled)
                     {
-                        logger.LogError("Event of type: {t} failed after all retry attempts. This event will be skipped and may need manual intervention.", message.MessageTypeName);
+                        logger.LogError("Event of type: {t} failed after all retry attempts. Writing to dead-letter store.", message.MessageTypeName);
+                        await WriteToDeadLetterAsync(services, message, ex);
                     }
                 }
             }
@@ -135,6 +139,34 @@ public class EventHandlingService(IConsumer<string, MessageEnvelop> consumer,
         else
         {
             logger.LogWarning("Event type not found: {t}. Message will be skipped.", message.MessageTypeName);
+        }
+    }
+
+    private async Task WriteToDeadLetterAsync(IServiceProvider services, MessageEnvelop message, Exception lastException)
+    {
+        try
+        {
+            var dbContext = services.GetRequiredService<ProductCatalogDbContext>();
+            var deadLetterEvent = new DeadLetterEvent
+            {
+                Id = Guid.CreateVersion7(),
+                EventTypeName = message.MessageTypeName,
+                Payload = message.Message,
+                ErrorMessage = lastException.Message,
+                StackTrace = lastException.StackTrace,
+                RetryCount = 3,
+                FailedAt = DateTime.UtcNow,
+                IsReprocessed = false
+            };
+
+            await dbContext.DeadLetterEvents.AddAsync(deadLetterEvent);
+            await dbContext.SaveChangesAsync();
+
+            logger.LogInformation("Dead-letter event written for type: {t}, Id: {id}", message.MessageTypeName, deadLetterEvent.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to write dead-letter event for type: {t}. Event data: {payload}", message.MessageTypeName, message.Message);
         }
     }
 }

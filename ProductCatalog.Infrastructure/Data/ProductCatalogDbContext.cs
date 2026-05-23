@@ -17,6 +17,7 @@ public class ProductCatalogDbContext(DbContextOptions<ProductCatalogDbContext> o
     public DbSet<GroupProduct> GroupProducts { get; internal set; }
     public DbSet<ProductHistory> ProductHistories { get; internal set; } = default!;
     public DbSet<LogTailingOutboxMessage> LogTailingOutboxMessages { get; internal set; } = default!;
+    public DbSet<DeadLetterEvent> DeadLetterEvents { get; internal set; } = default!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -87,5 +88,13 @@ public class ProductCatalogDbContext(DbContextOptions<ProductCatalogDbContext> o
             .HasIndex(ph => new { ph.ProductId, ph.Version })
             .IsUnique()
             .HasDatabaseName("IX_ProductHistories_ProductId_Version");
+
+        modelBuilder.Entity<DeadLetterEvent>()
+            .HasIndex(d => d.IsReprocessed)
+            .HasDatabaseName("IX_DeadLetterEvents_IsReprocessed");
+
+        modelBuilder.Entity<DeadLetterEvent>()
+            .HasIndex(d => d.FailedAt)
+            .HasDatabaseName("IX_DeadLetterEvents_FailedAt");
     }
 }

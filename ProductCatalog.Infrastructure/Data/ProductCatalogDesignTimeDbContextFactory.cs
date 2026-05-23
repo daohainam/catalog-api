@@ -9,10 +9,11 @@ namespace ProductCatalog.Infrastructure.Data
             var optionsBuilder = new DbContextOptionsBuilder<ProductCatalogDbContext>();
             
             // This is only used for design-time operations (migrations, scaffolding).
-            // For development, use environment variable or user secrets.
-            // For production, this is never used - connection strings come from configuration.
-            var connectionString = Environment.GetEnvironmentVariable("PRODUCTCATALOG_CONNECTIONSTRING") 
-                ?? "Host=localhost;Database=productcatalog;Username=postgres;Password=postgres";
+            // Connection string MUST be provided via environment variable.
+            var connectionString = Environment.GetEnvironmentVariable("PRODUCTCATALOG_CONNECTIONSTRING")
+                ?? throw new InvalidOperationException(
+                    "Connection string not found. Set the PRODUCTCATALOG_CONNECTIONSTRING environment variable. " +
+                    "Example: Host=localhost;Database=productcatalog;Username=postgres;Password=yourpassword");
             
             optionsBuilder.UseNpgsql(connectionString);
 

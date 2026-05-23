@@ -1,5 +1,7 @@
 using EventBus;
+using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Events;
+using ProductCatalog.Infrastructure.Data;
 using ProductCatalog.Search;
 using ProductCatalog.SearchSyncService;
 using ProductCatalog.SearchSyncService.EventHandlers;
@@ -23,6 +25,9 @@ builder.AddElasticsearchClient(connectionName: "elasticsearch",
         settings.DefaultMappingFor<ProductIndexDocument>(m => m.IndexName(nameof(ProductIndexDocument).ToLower()));
     }
 );
+
+// Register database context for dead-letter event persistence
+builder.AddNpgsqlDbContext<ProductCatalogDbContext>("catalogdb");
 
 // Register index configuration options
 var indexOptions = new ElasticsearchIndexOptions();

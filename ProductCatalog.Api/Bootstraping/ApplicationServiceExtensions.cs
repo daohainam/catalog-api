@@ -7,6 +7,13 @@ using System.Threading.RateLimiting;
 
 namespace ProductCatalog.Api.Bootstraping;
 
+public class RateLimitOptions
+{
+    public int PermitLimit { get; set; } = 100;
+    public int WindowMinutes { get; set; } = 1;
+    public int QueueLimit { get; set; } = 10;
+}
+
 public static class ApplicationServiceExtensions
 {
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
@@ -26,15 +33,18 @@ public static class ApplicationServiceExtensions
             });
         });
 
+        var rateLimitOptions = new RateLimitOptions();
+        builder.Configuration.GetSection("RateLimiting").Bind(rateLimitOptions);
+
         builder.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.AddFixedWindowLimiter("fixed", limiterOptions =>
             {
-                limiterOptions.PermitLimit = 100;
-                limiterOptions.Window = TimeSpan.FromMinutes(1);
+                limiterOptions.PermitLimit = rateLimitOptions.PermitLimit;
+                limiterOptions.Window = TimeSpan.FromMinutes(rateLimitOptions.WindowMinutes);
                 limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                limiterOptions.QueueLimit = 10;
+                limiterOptions.QueueLimit = rateLimitOptions.QueueLimit;
             });
         });
     }

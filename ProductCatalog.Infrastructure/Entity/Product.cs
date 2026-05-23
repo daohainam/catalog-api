@@ -8,8 +8,8 @@ public class Product
     public string UrlSlug { get; set; } = default!;
     public string Description { get; set; } = default!;
     public Guid BrandId { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public bool IsActive { get; set; }
     public bool IsDeleted { get; set; }
     public long Version { get; set; } = 1;

@@ -1,11 +1,9 @@
 using EventBus.Kafka;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ProductCatalog.Events;
 using ProductCatalog.Infrastructure.Data;
 using ProductCatalog.OutboxService;
 using ProductCatalog.ServiceDefaults;
-using System.Reflection;
 
 var builder = Host.CreateApplicationBuilder(args);
 var eventAssembly = typeof(ProductCreatedEvent).Assembly;
@@ -26,15 +24,9 @@ builder.Services.AddSingleton(s =>
     return new TransactionalOutboxLogTailingServiceOptions()
     {
         ConnectionString = connectionString,
-        PayloadTypeResolver = (type) =>
-        {
-            var resolvedType = (eventAssembly ?? Assembly.GetExecutingAssembly()).GetType(type);
-            if (resolvedType == null)
-            {
-                throw new InvalidOperationException($"Could not resolve event type: {type}. Ensure the type exists in the ProductCatalog.Events assembly.");
-            }
-            return resolvedType;
-        },
+        // Returns null rather than throwing: the caller logs the unknown type and
+        // parks the row. Throwing here took the whole service down on one bad row.
+        PayloadTypeResolver = eventAssembly.GetType,
     };
 });
 
@@ -43,7 +35,7 @@ builder.AddNpgsqlDbContext<ProductCatalogDbContext>("catalogdb", configureDbCont
     dbContextOptionsBuilder.UseNpgsql(builder =>
     {
     });
-}); 
+});
 
 builder.Services.AddHostedService<TransactionalOutboxLogTailingService>();
 

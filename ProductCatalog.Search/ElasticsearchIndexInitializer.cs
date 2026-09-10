@@ -35,7 +35,17 @@ public class ElasticsearchIndexInitializer
             _logger.LogInformation("Checking if Elasticsearch product index exists...");
             
             var existsResponse = await ElasticsearchIndexConfiguration.IndexExistsAsync(_client, cancellationToken);
-            
+
+            // A transport failure also reports Exists == false, which would be
+            // misread as "index missing" and send us on to create it. Only 200
+            // (exists) and 404 (does not exist) are real answers.
+            var existsStatusCode = existsResponse.ApiCallDetails?.HttpStatusCode;
+            if (existsStatusCode is not (200 or 404))
+            {
+                throw new InvalidOperationException(
+                    $"Could not determine whether the product index exists: {existsResponse.DebugInformation}");
+            }
+
             if (existsResponse.Exists)
             {
                 if (recreateIfExists)

@@ -1,3 +1,7 @@
+﻿// Data-layer tests: these exercise the EF model and queries through the
+// in-memory provider, not the HTTP endpoints. Endpoint behaviour (status
+// codes, validation, versioning, revert, outbox writes) is covered in
+// ProductCatalog.Api.EndpointTests against a real PostgreSQL container.
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Infrastructure.Data;

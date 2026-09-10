@@ -14,13 +14,16 @@ builder.AddKafkaEventConsumer(options =>
     options.ServiceName = "CatalogSyncService";
     options.KafkaGroupId = "catalog-service";
     options.Topics.AddRange("catalog-events");
+    // Resolves every event type declared in ProductCatalog.Events, not just one.
     options.IntegrationEventFactory = IntegrationEventFactory<ProductCreatedEvent>.Instance;
 });
 
 builder.AddElasticsearchClient(connectionName: "elasticsearch",
     configureClientSettings: (settings) =>
     {
-        settings.DefaultMappingFor<ProductIndexDocument>(m => m.IndexName(nameof(ProductIndexDocument).ToLower()));
+        settings.DefaultMappingFor<ProductIndexDocument>(m => m
+            .IndexName(ElasticsearchIndexConfiguration.IndexName)
+            .IdProperty(p => p.ProductId));
     }
 );
 
@@ -34,10 +37,10 @@ builder.Services.AddSingleton<ElasticsearchIndexInitializer>();
 
 // Register event handlers
 builder.Services.AddSingleton<IEventHandlerFactory, EventHandlerFactory>();
+builder.Services.AddTransient<ProductIndexWriter>();
 builder.Services.AddTransient<ProductCreatedEventHandler>();
-
-// Register the event handling background service
-builder.Services.AddHostedService<EventHandlingService>();
+builder.Services.AddTransient<ProductUpdatedEventHandler>();
+builder.Services.AddTransient<ProductDeletedEventHandler>();
 
 var host = builder.Build();
 
@@ -47,9 +50,11 @@ try
     using var scope = host.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var indexInitializer = scope.ServiceProvider.GetRequiredService<ElasticsearchIndexInitializer>();
-    
+
     logger.LogInformation("Initializing Elasticsearch index...");
-    await indexInitializer.InitializeAsync(recreateIfExists: false);
+    // Bounded so an unreachable Elasticsearch fails startup instead of hanging it.
+    using var initializationTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+    await indexInitializer.InitializeAsync(recreateIfExists: false, initializationTimeout.Token);
     logger.LogInformation("Elasticsearch index initialized successfully");
 }
 catch (Exception ex)

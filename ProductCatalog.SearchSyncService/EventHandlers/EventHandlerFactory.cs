@@ -1,4 +1,4 @@
-﻿using EventBus.Events;
+using EventBus.Events;
 using ProductCatalog.Events;
 
 namespace ProductCatalog.SearchSyncService.EventHandlers;
@@ -15,6 +15,8 @@ internal class EventHandlerFactory: IEventHandlerFactory
         return evt switch
         {
             ProductCreatedEvent => services.GetService<ProductCreatedEventHandler>(),
+            ProductUpdatedEvent => services.GetService<ProductUpdatedEventHandler>(),
+            ProductDeletedEvent => services.GetService<ProductDeletedEventHandler>(),
             _ => null
         };
 

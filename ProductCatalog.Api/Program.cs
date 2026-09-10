@@ -1,4 +1,4 @@
-using ProductCatalog.Api.Apis;
+﻿using ProductCatalog.Api.Apis;
 using ProductCatalog.Api.Bootstraping;
 using ProductCatalog.ServiceDefaults;
 
@@ -24,3 +24,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Exposed so WebApplicationFactory<Program> can host the real app in tests.
+public partial class Program;

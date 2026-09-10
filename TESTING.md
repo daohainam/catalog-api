@@ -1,26 +1,36 @@
-# Testing Guide for Product Catalog API
+﻿# Testing Guide for Product Catalog API
 
 This document provides information about the test suite for the Product Catalog API, an Aspire-based microservice with CQRS, event-driven architecture, Kafka messaging, Elasticsearch, and PostgreSQL.
 
 ## Test Projects
 
 ### 1. ProductCatalog.Api.Tests (Unit Tests)
-Contains unit tests that test individual components in isolation using in-memory databases and mocked dependencies.
+Fast, Docker-free tests for pure logic and for the EF model through the in-memory
+provider. These do **not** exercise the HTTP endpoints - the in-memory provider
+also ignores unique indexes, NOT NULL and concurrency tokens, so anything that
+depends on those belongs in the endpoint tests below.
 
 **Test Categories:**
-- **ProductEsMapperTests**: Tests for mapping Product entities to Elasticsearch documents
-- **BrandServiceTests**: Tests for Brand CRUD operations
-- **ProductServiceTests**: Tests for Product CRUD operations with variants and dimensions
+- **ProductEsMapperTests / ProductEsMapperNullSafetyTests**: mapping events to Elasticsearch documents, including events whose collections arrive as explicit nulls
+- **ProductSnapshotTests**: parsing product history snapshots, including rows written by earlier versions
+- **IntegrationEventSerializationTests**: event id/creation date round-tripping and partition keys
+- **BrandServiceTests / ProductServiceTests**: EF model and query behaviour
 
-**Key Tests:**
-- Product to Elasticsearch document mapping
-- Price calculation (minimum price selection)
-- Category path building
-- Variant and dimension handling
-- Pagination logic
-- CRUD operations
+### 2. ProductCatalog.Api.EndpointTests (Endpoint Tests)
+Hosts the real API with `WebApplicationFactory<Program>` against a throwaway
+PostgreSQL container (Testcontainers), so the endpoints themselves are under test
+rather than a copy of their logic. **Requires Docker.**
 
-### 2. ProductCatalog.IntegrationTests (Integration Tests)
+**Test Categories:**
+- **ProductHistoryEndpointTests**: history listing, revert semantics, unreadable snapshots, concurrency conflicts
+- **ProductOutboxEndpointTests**: every product write queues the right event
+- **ProductValidationEndpointTests**: validation status codes and error messages
+
+```bash
+dotnet test ProductCatalog.Api.EndpointTests/ProductCatalog.Api.EndpointTests.csproj
+```
+
+### 3. ProductCatalog.IntegrationTests (Integration Tests)
 Contains integration tests that test the entire system using Aspire.Hosting.Testing with real infrastructure (PostgreSQL, Kafka, Elasticsearch).
 
 **Test Categories:**

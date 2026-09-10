@@ -1,4 +1,4 @@
-var builder = DistributedApplication.CreateBuilder(args);
+﻿var builder = DistributedApplication.CreateBuilder(args);
 
 //var redis = builder.AddRedis("redis")
 //    .WithImageTag("latest");
@@ -9,7 +9,10 @@ var postgres = builder.AddPostgres("postgresql")
     .WithLifetime(ContainerLifetime.Persistent).WithDataVolume()
     .WithPgWeb();
 var elasticsearch = builder.AddElasticsearch("elasticsearch")
-    .WithLifetime(ContainerLifetime.Persistent).WithDataVolume().WithContainerRuntimeArgs("--memory=512m");
+    .WithLifetime(ContainerLifetime.Persistent).WithDataVolume()
+    // Elasticsearch 8 sizes its JVM heap from the container memory limit; 512m
+    // leaves it short enough to OOM or go red under any real indexing load.
+    .WithContainerRuntimeArgs("--memory=2g");
 
 //var postgres = builder.AddPostgres("postgres")
 //    .WithImageTag("latest")
@@ -30,7 +33,9 @@ builder.AddProject<Projects.ProductCatalog_SearchSyncService>("catalog-api-searc
     .WithReference(elasticsearch)
     .WaitFor(kafka)
     .WaitFor(elasticsearch)
-    .WaitFor(migrationService);
+    // The migration service runs to completion and exits, so waiting for it to
+    // become healthy (WaitFor) would never be satisfied.
+    .WaitForCompletion(migrationService);
 
 var outboxService = builder.AddProject<Projects.ProductCatalog_OutboxService>("catalog-api-outboxservice")
     .WithReference(catalogDb)

@@ -87,5 +87,20 @@ public class ProductCatalogDbContext(DbContextOptions<ProductCatalogDbContext> o
             .HasIndex(ph => new { ph.ProductId, ph.Version })
             .IsUnique()
             .HasDatabaseName("IX_ProductHistories_ProductId_Version");
+
+        // Partial index: the outbox sweep only ever queries unprocessed rows.
+        modelBuilder.Entity<LogTailingOutboxMessage>()
+            .HasIndex(m => m.CreationDate)
+            .HasFilter("\"ProcessedAt\" IS NULL")
+            .HasDatabaseName("IX_LogTailingOutboxMessages_Unprocessed");
+
+        // Optimistic concurrency for the product version bump. Version is already
+        // incremented on every write, so using it as the token adds a
+        // "WHERE Version = @original" to the UPDATE without a new column: two
+        // concurrent updates can no longer both write history at the same version
+        // and collide on IX_ProductHistories_ProductId_Version.
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Version)
+            .IsConcurrencyToken();
     }
 }

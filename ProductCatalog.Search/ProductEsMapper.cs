@@ -6,22 +6,30 @@ namespace ProductCatalog.Search;
 
 public static class ProductEsMapper
 {
-    public static ProductIndexDocument Map(ProductCreatedEvent e)
+    public static ProductIndexDocument Map(ProductCreatedEvent e) => Map(e.ProductId, e.Product);
+
+    public static ProductIndexDocument Map(ProductUpdatedEvent e) => Map(e.ProductId, e.Product);
+
+    public static ProductIndexDocument Map(Guid productId, ProductInfo product)
     {
-        var p = e.Product;
+        // Collections are list-initialized on ProductInfo, but an explicit null in
+        // the incoming JSON overwrites those initializers, so every access is guarded.
+        var p = product ?? throw new ArgumentNullException(nameof(product));
 
         // Dimension metadata lookup
         var dimById = new Dictionary<string, DimensionInfo>(StringComparer.OrdinalIgnoreCase);
-        foreach (var d in p.Dimensions)
+        foreach (var d in p.Dimensions ?? [])
             dimById[d.DimensionId] = d;
 
-        var variants = new List<VariantDoc>(p.Variants.Count);
-        foreach (var v in p.Variants)
+        var productVariants = p.Variants ?? [];
+        var variants = new List<VariantDoc>(productVariants.Count);
+        foreach (var v in productVariants)
         {
-            var dimsNested = new List<VariantDimensionDoc>(v.DimensionValues.Count);
+            var variantDimensionValues = v.DimensionValues ?? [];
+            var dimsNested = new List<VariantDimensionDoc>(variantDimensionValues.Count);
             var dimsFlat = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            foreach (var dv in v.DimensionValues)
+            foreach (var dv in variantDimensionValues)
             {
                 // resolve name & display_value from metadata
                 string dimId = dv.DimensionId;
@@ -65,9 +73,7 @@ public static class ProductEsMapper
 
         // Rollups
         decimal? priceMin = variants.Count > 0 ? variants.Min(x => x.Price) : null;
-        var inStockVariants = variants.Where(x => x.InStock).ToList();
-        decimal? priceMinInStock = inStockVariants.Count > 0 ? inStockVariants.Min(x => x.Price) : priceMin;
-        bool hasStock = inStockVariants.Count > 0;
+        bool hasStock = variants.Exists(x => x.InStock);
         var primary = ChoosePrimary(variants);
 
         // Category leaf + breadcrumb from Product.Path
@@ -84,16 +90,18 @@ public static class ProductEsMapper
             categoryPath = string.Join("/", p.Path.Select(x => x.UrlSlug));
         }
 
+        var brand = p.Brand;
+
         return new ProductIndexDocument
         {
-            ProductId = e.ProductId,
+            ProductId = productId,
 
             Name = p.Name,
             Slug = p.UrlSlug,
             Description = p.Description ?? "",
 
-            BrandId = p.Brand.BrandId,
-            BrandName = p.Brand.Name,
+            BrandId = brand?.BrandId ?? Guid.Empty,
+            BrandName = brand?.Name ?? "",
 
             CategoryId = categoryId,
             CategoryName = categoryName,
@@ -107,10 +115,10 @@ public static class ProductEsMapper
                 DisplayType = d.DisplayType
             })],
 
-            GroupIds = [.. p.Groups.Select(g => g.GroupId)],
-            GroupNames = [.. p.Groups.Select(g => g.Name)],
+            GroupIds = [.. (p.Groups ?? []).Select(g => g.GroupId)],
+            GroupNames = [.. (p.Groups ?? []).Select(g => g.Name)],
 
-            Images = [.. p.Images
+            Images = [.. (p.Images ?? [])
                 .OrderBy(i => i.SortOrder)
                 .Select(i => new ImageDoc { Url = i.ImageUrl, Alt = i.AltText ?? "", SortOrder = i.SortOrder })],
 
@@ -125,7 +133,7 @@ public static class ProductEsMapper
             CreatedAt = p.CreatedAt,
             UpdatedAt = p.UpdatedAt,
 
-            Suggest = new SimpleCompletion { Input = [p.Name, p.Brand.Name] }
+            Suggest = new SimpleCompletion { Input = [p.Name, brand?.Name ?? ""] }
         };
     }
 

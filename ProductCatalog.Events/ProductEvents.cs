@@ -1,4 +1,5 @@
 ﻿using EventBus.Events;
+using System.Text.Json.Serialization;
 
 namespace ProductCatalog.Events;
 
@@ -6,18 +7,27 @@ public class ProductCreatedEvent: IntegrationEvent
 {
     public Guid ProductId { get; set; }
     public ProductInfo Product { get; set; } = default!;
+
+    [JsonIgnore]
+    public override string PartitionKey => ProductId.ToString();
 }
 
 public class ProductUpdatedEvent: IntegrationEvent
 {
     public Guid ProductId { get; set; }
     public ProductInfo Product { get; set; } = default!;
+
+    [JsonIgnore]
+    public override string PartitionKey => ProductId.ToString();
 }
 
 
 public class ProductDeletedEvent: IntegrationEvent
 {
     public Guid ProductId { get; set; }
+
+    [JsonIgnore]
+    public override string PartitionKey => ProductId.ToString();
 }
 
 public class ProductInfo

@@ -1,4 +1,4 @@
-﻿using EventBus.Events;
+using EventBus.Events;
 
 namespace EventBus.Kafka;
 public class KafkaEventPublisher(string topic, IProducer<string, MessageEnvelop> producer, ILogger logger) : IEventPublisher
@@ -10,8 +10,13 @@ public class KafkaEventPublisher(string topic, IProducer<string, MessageEnvelop>
 
         try
         {
-            await producer.ProduceAsync(topic, new Message<string, MessageEnvelop> { Key = @event.GetType().FullName!, 
-                Value = new MessageEnvelop(@event.GetType(), json) },
+            await producer.ProduceAsync(topic, new Message<string, MessageEnvelop>
+                {
+                    // Keyed by aggregate id so events for one product stay ordered
+                    // while different products spread across partitions.
+                    Key = @event.PartitionKey,
+                    Value = new MessageEnvelop(@event.GetType(), json)
+                },
                 cancellationToken
             );
 

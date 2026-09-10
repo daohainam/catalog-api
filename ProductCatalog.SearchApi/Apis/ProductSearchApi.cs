@@ -1,4 +1,6 @@
-﻿using System.Threading.RateLimiting;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using ProductCatalog.Search;
@@ -8,6 +10,7 @@ public static class ProductSearchApi
 {
     private const int defaultPageSize = 10;
     private const int maxPageSize = 100;
+    private const int maxResultWindow = 10_000; // Elasticsearch index.max_result_window default
     
     public static IEndpointRouteBuilder MapSearchApi(this IEndpointRouteBuilder builder)
     {
@@ -47,8 +50,13 @@ public static class ProductSearchApi
             return Results.BadRequest("Query parameter is required.");
         }
 
-        page = page < 1 ? 1 : page;
         pageSize = Math.Min(pageSize < 1 ? defaultPageSize : pageSize, maxPageSize);
+
+        // from + size must stay under Elasticsearch's index.max_result_window, and
+        // clamping page also stops (page - 1) * pageSize from overflowing to a
+        // negative offset.
+        var maxPage = Math.Max(1, maxResultWindow / pageSize);
+        page = Math.Clamp(page, 1, maxPage);
 
         // Uses optimized index with:
         // - 3 shards for distributed query load
@@ -61,8 +69,15 @@ public static class ProductSearchApi
             .Query(q => q
                 .Bool(b => b
                     .Must(m => m
-                        .QueryString(qs => qs
+                        // SimpleQueryString over an explicit field list, not
+                        // QueryString: the latter hands anonymous callers full
+                        // Lucene syntax (leading wildcards, regex, field probes)
+                        // and turns a typo into a 500.
+                        .SimpleQueryString(qs => qs
                             .Query(query)
+                            .Fields(new[] { "name^3", "description", "brand_name^2", "category_name" })
+                            .DefaultOperator(Operator.And)
+                            .Lenient(true)
                         )
                     )
                     .Filter(f => f

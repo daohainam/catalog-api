@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore ProductCatalog.sln
+
+      - name: Build
+        run: dotnet build ProductCatalog.sln --no-restore --configuration Release
+
+      - name: Unit tests
+        run: dotnet test ProductCatalog.Api.Tests/ProductCatalog.Api.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      # Starts a PostgreSQL container via Testcontainers; the hosted runner
+      # provides Docker. The Aspire integration tests are not run here - they
+      # bring up Kafka and Elasticsearch too. See TESTING.md.
+      - name: Endpoint tests
+        run: dotnet test ProductCatalog.Api.EndpointTests/ProductCatalog.Api.EndpointTests.csproj --no-build --configuration Release --verbosity normal

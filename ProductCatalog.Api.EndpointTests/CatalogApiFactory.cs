@@ -43,11 +43,11 @@ public sealed class CatalogApiFactory : WebApplicationFactory<Program>, IAsyncLi
         builder.UseEnvironment("Development");
     }
 
-    public ProductCatalogDbContext CreateDbContext()
-    {
-        var scope = Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
-    }
+    /// <summary>
+    /// Scope for inspecting or seeding the database directly. The caller owns the
+    /// scope, so dispose it rather than just the DbContext.
+    /// </summary>
+    public AsyncServiceScope CreateScope() => Services.CreateAsyncScope();
 }
 
 [CollectionDefinition(Name)]

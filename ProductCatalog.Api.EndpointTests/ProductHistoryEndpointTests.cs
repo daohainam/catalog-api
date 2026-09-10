@@ -1,5 +1,7 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using ProductCatalog.Infrastructure.Data;
 using ProductCatalog.Api.Models;
 using ProductCatalog.Infrastructure.Entity;
 using System.Net;
@@ -86,10 +88,13 @@ public class ProductHistoryEndpointTests(CatalogApiFactory factory)
         var product = await CreateProductAsync("Corrupt history");
         await UpdateProductAsync(product, name: "Second version");
 
-        using var dbContext = factory.CreateDbContext();
-        var history = await dbContext.ProductHistories.SingleAsync(h => h.ProductId == product.Id && h.Version == 1);
-        history.ProductData = """{"SchemaVersion":999,"Name":"from the future"}""";
-        await dbContext.SaveChangesAsync();
+        await using (var scope = factory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
+            var history = await dbContext.ProductHistories.SingleAsync(h => h.ProductId == product.Id && h.Version == 1);
+            history.ProductData = """{"SchemaVersion":999,"Name":"from the future"}""";
+            await dbContext.SaveChangesAsync();
+        }
 
         var response = await client.PostAsync($"/api/v1/products/{product.Id}/history/1/revert", null);
 
@@ -98,21 +103,33 @@ public class ProductHistoryEndpointTests(CatalogApiFactory factory)
     }
 
     [Fact]
-    public async Task UpdateProduct_ReturnsConflictWhenTheProductChangedUnderneath()
+    public async Task ConcurrentUpdates_LoseTheRaceInsteadOfCorruptingHistory()
     {
+        // The endpoint reloads the product on every request, so a conflict can only
+        // be produced by two writers holding the same original version - which is
+        // exactly the race that used to collide on the unique
+        // (ProductId, Version) history index with a raw DbUpdateException.
         var product = await CreateProductAsync("Contended");
 
-        // Simulate a concurrent writer by bumping the version behind the API's back.
-        using (var dbContext = factory.CreateDbContext())
-        {
-            await dbContext.Products
-                .Where(p => p.Id == product.Id)
-                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Version, p => p.Version + 1));
-        }
+        await using var first = factory.CreateScope();
+        await using var second = factory.CreateScope();
 
-        var stale = await UpdateProductAsync(product, name: "Loser");
+        var firstContext = first.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
+        var secondContext = second.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
 
-        stale.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var firstCopy = await firstContext.Products.SingleAsync(p => p.Id == product.Id);
+        var secondCopy = await secondContext.Products.SingleAsync(p => p.Id == product.Id);
+
+        firstCopy.Name = "First writer";
+        firstCopy.Version++;
+        await firstContext.SaveChangesAsync();
+
+        secondCopy.Name = "Second writer";
+        secondCopy.Version++;
+
+        var save = async () => await secondContext.SaveChangesAsync();
+
+        await save.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
 
     private async Task<Product> CreateProductAsync(string name)

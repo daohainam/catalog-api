@@ -18,19 +18,20 @@ public static class CatalogApi
     public static IEndpointRouteBuilder MapCatalogApi(this IEndpointRouteBuilder builder)
     {
         // AddApiVersioning was registered but no endpoint ever declared a version,
-        // so the "/api/v1" prefix was just a string. Binding the group to a real
-        // version set makes ReportApiVersions and the X-Version header work, and
-        // still resolves to /api/v1.
+        // so the "/api/v1" prefix was just a string and ReportApiVersions emitted
+        // nothing. Declaring a version set makes the reported versions and the
+        // X-Version header real. The prefix stays literal: adding
+        // "v{version:apiVersion}" collides with the version route parameter the
+        // versioning convention contributes, which breaks the whole group.
         var versionSet = builder.NewApiVersionSet()
             .HasApiVersion(new ApiVersion(1, 0))
             .ReportApiVersions()
             .Build();
 
-        builder.MapGroup("/api/v{version:apiVersion}")
+        builder.MapGroup("/api/v1")
               .MapCatalogApi()
               .WithTags("Product Catalog Api")
               .WithApiVersionSet(versionSet)
-              .MapToApiVersion(new ApiVersion(1, 0))
               .RequireRateLimiting("fixed");
 
         return builder;

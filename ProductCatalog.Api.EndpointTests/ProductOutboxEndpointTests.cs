@@ -1,5 +1,7 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using ProductCatalog.Infrastructure.Data;
 using ProductCatalog.Infrastructure.Entity;
 using System.Net;
 using System.Net.Http.Json;
@@ -78,7 +80,8 @@ public class ProductOutboxEndpointTests(CatalogApiFactory factory)
     {
         var product = await CreateProductAsync();
 
-        using var dbContext = factory.CreateDbContext();
+        await using var scope = factory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
         var messages = await dbContext.LogTailingOutboxMessages
             .Where(m => m.Payload.Contains(product.Id.ToString()))
             .ToListAsync();
@@ -89,7 +92,8 @@ public class ProductOutboxEndpointTests(CatalogApiFactory factory)
 
     private async Task<List<string>> OutboxPayloadTypesAsync(Guid productId)
     {
-        using var dbContext = factory.CreateDbContext();
+        await using var scope = factory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ProductCatalogDbContext>();
         return await dbContext.LogTailingOutboxMessages
             .Where(m => m.Payload.Contains(productId.ToString()))
             .OrderBy(m => m.CreationDate)

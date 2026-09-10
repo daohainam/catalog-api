@@ -13,6 +13,11 @@ public static class ApplicationServiceExtensions
         builder.Services.AddOpenApi();
         builder.Services.AddApiVersioning(options => {
             options.ReportApiVersions = true;
+            // The route prefix is literal "/api/v1", so a request carries no
+            // version segment; without a default, every request would fail to
+            // resolve a version once the endpoints declare one.
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
             options.ApiVersionReader = ApiVersionReader.Combine(
                 new UrlSegmentApiVersionReader(),
                 new HeaderApiVersionReader("X-Version"));

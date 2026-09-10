@@ -1,4 +1,4 @@
-using ProductCatalog.Search;
+﻿using ProductCatalog.Search;
 using ProductCatalog.SearchApi.Apis;
 using ProductCatalog.SearchApi.Bootstraping;
 using ProductCatalog.ServiceDefaults;
@@ -17,7 +17,9 @@ try
     var indexInitializer = scope.ServiceProvider.GetRequiredService<ElasticsearchIndexInitializer>();
     
     logger.LogInformation("Initializing Elasticsearch index...");
-    await indexInitializer.InitializeAsync(recreateIfExists: false);
+    // Bounded so an unreachable Elasticsearch fails startup instead of hanging it.
+    using var initializationTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+    await indexInitializer.InitializeAsync(recreateIfExists: false, initializationTimeout.Token);
     logger.LogInformation("Elasticsearch index initialized successfully");
 }
 catch (Exception ex)

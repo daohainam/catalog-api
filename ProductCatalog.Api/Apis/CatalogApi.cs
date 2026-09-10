@@ -5,6 +5,8 @@ public static class CatalogApi
     private static readonly string InvalidDisplayType = $"Invalid display type. Valid types are: {string.Join(", ", DimensionDisplayTypes.All)}";
     private const int defaultPageSize = 10;
     private const int maxPageSize = 100;
+    private const int maxNameLength = 200;
+    private const int maxDescriptionLength = 4000;
 
     private static (int offset, int limit) ValidatePagination(int? offset, int? limit)
     {
@@ -107,14 +109,9 @@ public static class CatalogApi
             return TypedResults.BadRequest("Brand not found.");
         }
 
-        if (string.IsNullOrEmpty(brand.Name))
+        if (ValidateBrand(brand) is string brandError)
         {
-            return TypedResults.BadRequest("Category Name is required.");
-        }
-
-        if (string.IsNullOrEmpty(brand.UrlSlug))
-        {
-            return TypedResults.BadRequest("Category UrlSlug is required.");
+            return TypedResults.BadRequest(brandError);
         }
 
         existingBrand.Name = brand.Name;
@@ -158,24 +155,9 @@ public static class CatalogApi
             return TypedResults.BadRequest("Brand object is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(brand.Name))
+        if (ValidateBrand(brand) is string brandError)
         {
-            return TypedResults.BadRequest("Brand Name is required and cannot be empty.");
-        }
-
-        if (string.IsNullOrWhiteSpace(brand.UrlSlug))
-        {
-            return TypedResults.BadRequest("Brand UrlSlug is required and cannot be empty.");
-        }
-
-        if (brand.Name.Length > 200)
-        {
-            return TypedResults.BadRequest("Brand Name cannot exceed 200 characters.");
-        }
-
-        if (brand.UrlSlug.Length > 200)
-        {
-            return TypedResults.BadRequest("Brand UrlSlug cannot exceed 200 characters.");
+            return TypedResults.BadRequest(brandError);
         }
 
         if (brand.Id == Guid.Empty)
@@ -186,6 +168,23 @@ public static class CatalogApi
 
         return TypedResults.Ok(brand);
     }
+
+    private static string? ValidateBrand(Brand brand)
+    {
+        if (string.IsNullOrWhiteSpace(brand.Name))
+            return "Brand Name is required and cannot be empty.";
+
+        if (string.IsNullOrWhiteSpace(brand.UrlSlug))
+            return "Brand UrlSlug is required and cannot be empty.";
+
+        if (brand.Name.Length > maxNameLength)
+            return $"Brand Name cannot exceed {maxNameLength} characters.";
+
+        if (brand.UrlSlug.Length > maxNameLength)
+            return $"Brand UrlSlug cannot exceed {maxNameLength} characters.";
+
+        return null;
+    }
     #endregion
 
     #region Variants
@@ -195,8 +194,10 @@ public static class CatalogApi
         {
             return TypedResults.BadRequest();
         }
-        var existingVariant = await services.DbContext.Variants.FindAsync(variantId);
-        if (existingVariant == null || existingVariant.ProductId != productId)
+
+        var product = await services.LoadProductForEventAsync(productId);
+        var existingVariant = product?.Variants.Find(v => v.Id == variantId);
+        if (product == null || existingVariant == null)
         {
             return TypedResults.NotFound();
         }
@@ -210,7 +211,9 @@ public static class CatalogApi
         existingVariant.IsDeleted = variant.IsDeleted;
         existingVariant.UpdatedAt = DateTime.UtcNow;
 
-        services.DbContext.Variants.Update(existingVariant);
+        // A variant change changes the product document on the read side.
+        await QueueProductUpdatedEventAsync(services, product);
+
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
         return TypedResults.Ok(existingVariant);
     }
@@ -222,7 +225,7 @@ public static class CatalogApi
             return TypedResults.BadRequest();
         }
 
-        var product = await services.DbContext.Products.Where(p => p.Id == productId).SingleOrDefaultAsync();
+        var product = await services.LoadProductForEventAsync(productId);
         if (product == null)
         {
             return TypedResults.NotFound();
@@ -278,6 +281,11 @@ public static class CatalogApi
             await services.DbContext.VariantDimensionValues.AddRangeAsync(allDimensionValues, services.CancellationToken);
         }
 
+        // Build the event from the in-memory graph: the new variants are not in the
+        // database yet, and the event must commit in the same transaction.
+        product.Variants.AddRange(variants.Where(v => !product.Variants.Contains(v)));
+        await QueueProductUpdatedEventAsync(services, product);
+
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
         return TypedResults.Ok(variants);
     }
@@ -329,6 +337,13 @@ public static class CatalogApi
         if (newProductDimensions.Count > 0)
         {
             await services.DbContext.ProductDimensions.AddRangeAsync(newProductDimensions, services.CancellationToken);
+
+            var product = await services.LoadProductForEventAsync(productId);
+            if (product != null)
+            {
+                product.Dimensions.AddRange(newProductDimensions);
+                await QueueProductUpdatedEventAsync(services, product);
+            }
         }
 
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
@@ -465,6 +480,21 @@ public static class CatalogApi
             return TypedResults.BadRequest();
         }
 
+        if (ValidateProduct(product) is string productError)
+        {
+            return TypedResults.BadRequest(productError);
+        }
+
+        if (!await services.DbContext.Brands.AnyAsync(b => b.Id == product.BrandId, services.CancellationToken))
+        {
+            return TypedResults.BadRequest($"Brand '{product.BrandId}' does not exist.");
+        }
+
+        if (!await services.DbContext.Categories.AnyAsync(c => c.Id == product.CategoryId, services.CancellationToken))
+        {
+            return TypedResults.BadRequest($"Category '{product.CategoryId}' does not exist.");
+        }
+
         if (product.Id == Guid.Empty)
             product.Id = Guid.CreateVersion7();
 
@@ -536,17 +566,9 @@ public static class CatalogApi
             }
         }
 
-        // create outbox event
-
-        var evt = await product.ToProductCreatedEvent(services);
-
-        await services.DbContext.AddAsync(new LogTailingOutboxMessage()
-        {
-            Id = Guid.NewGuid(),
-            CreationDate = DateTime.UtcNow,
-            PayloadType = typeof(ProductCatalog.Events.ProductCreatedEvent).FullName ?? throw new Exception($"Could not get fullname of type {evt.GetType()}"),
-            Payload = JsonSerializer.Serialize(evt),
-        });
+        // Queued in the same SaveChanges as the product, so the event and the data
+        // commit together.
+        await services.AddOutboxMessageAsync(await product.ToProductCreatedEvent(services));
 
         await services.DbContext.Products.AddAsync(product);
         await services.DbContext.SaveChangesAsync(services.CancellationToken);
@@ -554,40 +576,70 @@ public static class CatalogApi
         return TypedResults.Ok(product);
     }
 
-    private static async Task<Results<NotFound, Ok>> UpdateProduct([AsParameters] ApiServices services, Guid productId, Product product)
+    private static string? ValidateProduct(Product product)
     {
-        var existingProduct = await services.DbContext.Products.FindAsync(productId);
+        if (string.IsNullOrWhiteSpace(product.Name))
+            return "Product Name is required and cannot be empty.";
+
+        if (product.Name.Length > maxNameLength)
+            return $"Product Name cannot exceed {maxNameLength} characters.";
+
+        if (product.UrlSlug is { Length: > maxNameLength })
+            return $"Product UrlSlug cannot exceed {maxNameLength} characters.";
+
+        if (product.Description is { Length: > maxDescriptionLength })
+            return $"Product Description cannot exceed {maxDescriptionLength} characters.";
+
+        if (product.BrandId == Guid.Empty)
+            return "Product BrandId is required.";
+
+        if (product.CategoryId == Guid.Empty)
+            return "Product CategoryId is required.";
+
+        return null;
+    }
+
+    /// <summary>
+    /// Queues the product's post-change state so the read side stays in sync.
+    /// Every write path that changes a product must call this before its
+    /// SaveChanges - for a long time only CreateProduct emitted anything, so any
+    /// update left Elasticsearch serving stale data.
+    /// </summary>
+    private static async Task QueueProductUpdatedEventAsync(ApiServices services, Product product)
+    {
+        await services.AddOutboxMessageAsync(await product.ToProductUpdatedEvent(services));
+    }
+
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Conflict<string>>> UpdateProduct([AsParameters] ApiServices services, Guid productId, Product product)
+    {
+        if (product == null)
+        {
+            return TypedResults.BadRequest("Product object is required.");
+        }
+
+        if (product.Id != Guid.Empty && product.Id != productId)
+        {
+            return TypedResults.BadRequest("Product Id in the body does not match the route.");
+        }
+
+        if (ValidateProduct(product) is string productError)
+        {
+            return TypedResults.BadRequest(productError);
+        }
+
+        if (!await services.DbContext.Categories.AnyAsync(c => c.Id == product.CategoryId, services.CancellationToken))
+        {
+            return TypedResults.BadRequest($"Category '{product.CategoryId}' does not exist.");
+        }
+
+        // Loaded with its collections so the outbox event carries the full product.
+        var existingProduct = await services.LoadProductForEventAsync(productId);
         if (existingProduct == null)
         {
             return TypedResults.NotFound();
         }
 
-        // Save current product data to history before updating
-        var historyData = new
-        {
-            existingProduct.Id,
-            existingProduct.Name,
-            existingProduct.UrlSlug,
-            existingProduct.Description,
-            existingProduct.BrandId,
-            existingProduct.CategoryId,
-            existingProduct.CreatedAt,
-            existingProduct.UpdatedAt,
-            existingProduct.IsActive,
-            existingProduct.IsDeleted,
-            existingProduct.Version
-        };
-
-        var history = new ProductHistory
-        {
-            Id = Guid.CreateVersion7(),
-            ProductId = existingProduct.Id,
-            Version = existingProduct.Version,
-            ProductData = JsonSerializer.Serialize(historyData),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await services.DbContext.ProductHistories.AddAsync(history, services.CancellationToken);
+        await AddHistoryEntryAsync(services, existingProduct);
 
         existingProduct.Name = product.Name;
         existingProduct.Description = product.Description;
@@ -596,11 +648,46 @@ public static class CatalogApi
         existingProduct.CategoryId = product.CategoryId;
         existingProduct.Version++;
 
-        services.DbContext.Products.Update(existingProduct);
+        await QueueProductUpdatedEventAsync(services, existingProduct);
 
-        await services.DbContext.SaveChangesAsync(services.CancellationToken);
+        return await SaveProductChangeAsync(services, () => TypedResults.Ok());
+    }
 
-        return TypedResults.Ok();
+    /// <summary>
+    /// Snapshots the product as it stands into history, at its current version.
+    /// </summary>
+    private static Task AddHistoryEntryAsync(ApiServices services, Product product)
+    {
+        var history = new ProductHistory
+        {
+            Id = Guid.CreateVersion7(),
+            ProductId = product.Id,
+            Version = product.Version,
+            ProductData = JsonSerializer.Serialize(ProductSnapshot.From(product)),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        return services.DbContext.ProductHistories.AddAsync(history, services.CancellationToken).AsTask();
+    }
+
+    /// <summary>
+    /// Saves a product change, translating a lost concurrency race into 409 rather
+    /// than a 500. Two concurrent updates otherwise both write history at the same
+    /// version and collide on IX_ProductHistories_ProductId_Version.
+    /// </summary>
+    private static async Task<Results<NotFound, Ok, BadRequest<string>, Conflict<string>>> SaveProductChangeAsync(
+        ApiServices services, Func<Results<NotFound, Ok, BadRequest<string>, Conflict<string>>> onSuccess)
+    {
+        try
+        {
+            await services.DbContext.SaveChangesAsync(services.CancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TypedResults.Conflict("The product was modified by another request. Reload it and try again.");
+        }
+
+        return onSuccess();
     }
 
     #region Product History
@@ -642,16 +729,18 @@ public static class CatalogApi
         return TypedResults.Ok(history);
     }
 
-    private static async Task<Results<Ok<Product>, NotFound, BadRequest<string>>> RevertProduct(
+    private static async Task<Results<Ok<Product>, NotFound, BadRequest<string>, Conflict<string>>> RevertProduct(
         [AsParameters] ApiServices services, Guid productId, long version)
     {
-        var existingProduct = await services.DbContext.Products.FindAsync(productId);
+        // Loaded with its collections so the outbox event carries the full product.
+        var existingProduct = await services.LoadProductForEventAsync(productId);
         if (existingProduct == null)
         {
             return TypedResults.NotFound();
         }
 
         var history = await services.DbContext.ProductHistories
+            .AsNoTracking()
             .Where(h => h.ProductId == productId && h.Version == version)
             .SingleOrDefaultAsync(services.CancellationToken);
 
@@ -660,49 +749,37 @@ public static class CatalogApi
             return TypedResults.NotFound();
         }
 
-        // Deserialize the historical product data
-        var historicalData = JsonSerializer.Deserialize<JsonElement>(history.ProductData);
+        var snapshot = ProductSnapshot.TryParse(history.ProductData);
+        if (snapshot == null)
+        {
+            return TypedResults.BadRequest($"History record for version {version} cannot be read and cannot be reverted to.");
+        }
 
         // Save current product data to history before reverting
-        var currentData = new
-        {
-            existingProduct.Id,
-            existingProduct.Name,
-            existingProduct.UrlSlug,
-            existingProduct.Description,
-            existingProduct.BrandId,
-            existingProduct.CategoryId,
-            existingProduct.CreatedAt,
-            existingProduct.UpdatedAt,
-            existingProduct.IsActive,
-            existingProduct.IsDeleted,
-            existingProduct.Version
-        };
+        await AddHistoryEntryAsync(services, existingProduct);
 
-        var currentHistory = new ProductHistory
-        {
-            Id = Guid.CreateVersion7(),
-            ProductId = existingProduct.Id,
-            Version = existingProduct.Version,
-            ProductData = JsonSerializer.Serialize(currentData),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await services.DbContext.ProductHistories.AddAsync(currentHistory, services.CancellationToken);
-
-        // Revert the product fields from historical data
-        existingProduct.Name = historicalData.GetProperty("Name").GetString()!;
-        existingProduct.UrlSlug = historicalData.GetProperty("UrlSlug").GetString()!;
-        existingProduct.Description = historicalData.GetProperty("Description").GetString()!;
-        existingProduct.BrandId = historicalData.GetProperty("BrandId").GetGuid();
-        existingProduct.CategoryId = historicalData.GetProperty("CategoryId").GetGuid();
-        existingProduct.IsActive = historicalData.GetProperty("IsActive").GetBoolean();
-        existingProduct.IsDeleted = historicalData.GetProperty("IsDeleted").GetBoolean();
+        // Reverting rolls forward: the restored state becomes a new version so the
+        // history stays append-only.
+        existingProduct.Name = snapshot.Name!;
+        existingProduct.UrlSlug = snapshot.UrlSlug!;
+        existingProduct.Description = snapshot.Description!;
+        existingProduct.BrandId = snapshot.BrandId;
+        existingProduct.CategoryId = snapshot.CategoryId;
+        existingProduct.IsActive = snapshot.IsActive;
+        existingProduct.IsDeleted = snapshot.IsDeleted;
         existingProduct.UpdatedAt = DateTime.UtcNow;
         existingProduct.Version++;
 
-        services.DbContext.Products.Update(existingProduct);
-        await services.DbContext.SaveChangesAsync(services.CancellationToken);
+        await QueueProductUpdatedEventAsync(services, existingProduct);
+
+        try
+        {
+            await services.DbContext.SaveChangesAsync(services.CancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TypedResults.Conflict("The product was modified by another request. Reload it and try again.");
+        }
 
         return TypedResults.Ok(existingProduct);
     }

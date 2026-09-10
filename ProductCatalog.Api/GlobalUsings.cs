@@ -1,4 +1,5 @@
-﻿global using Microsoft.AspNetCore.Http.HttpResults;
+﻿global using Asp.Versioning;
+global using Microsoft.AspNetCore.Http.HttpResults;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.EntityFrameworkCore;
 global using ProductCatalog.Api.Services;

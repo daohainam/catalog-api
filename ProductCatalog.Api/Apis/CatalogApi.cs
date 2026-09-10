@@ -17,9 +17,20 @@ public static class CatalogApi
 
     public static IEndpointRouteBuilder MapCatalogApi(this IEndpointRouteBuilder builder)
     {
-        builder.MapGroup("/api/v1")
+        // AddApiVersioning was registered but no endpoint ever declared a version,
+        // so the "/api/v1" prefix was just a string. Binding the group to a real
+        // version set makes ReportApiVersions and the X-Version header work, and
+        // still resolves to /api/v1.
+        var versionSet = builder.NewApiVersionSet()
+            .HasApiVersion(new ApiVersion(1, 0))
+            .ReportApiVersions()
+            .Build();
+
+        builder.MapGroup("/api/v{version:apiVersion}")
               .MapCatalogApi()
               .WithTags("Product Catalog Api")
+              .WithApiVersionSet(versionSet)
+              .MapToApiVersion(new ApiVersion(1, 0))
               .RequireRateLimiting("fixed");
 
         return builder;
@@ -87,9 +98,18 @@ public static class CatalogApi
         productApiGroup.MapPost("/{productId:guid}/variants", CreateVariant);
         productApiGroup.MapPut("/{productId:guid}/variants/{variantId:guid}", UpdateVariant);
 
-        productApiGroup.MapGet("/{productId:guid}/history", GetProductHistory);
-        productApiGroup.MapGet("/{productId:guid}/history/{version:long}", GetProductHistoryByVersion);
-        productApiGroup.MapPost("/{productId:guid}/history/{version:long}/revert", RevertProduct);
+        productApiGroup.MapGet("/{productId:guid}/history", GetProductHistory)
+            .WithSummary("Lists the product's version history, newest first.");
+        productApiGroup.MapGet("/{productId:guid}/history/{version:long}", GetProductHistoryByVersion)
+            .WithSummary("Returns the stored snapshot for one product version.");
+        productApiGroup.MapPost("/{productId:guid}/history/{version:long}/revert", RevertProduct)
+            .WithSummary("Reverts the product's own fields to a previous version.")
+            .WithDescription(
+                "Only the product's own columns are versioned (name, slug, description, brand, " +
+                "category, active and deleted flags). Variants, dimensions, images and group " +
+                "membership are not captured in history and are left untouched by a revert. " +
+                "The revert rolls forward: the restored state is saved as a new version rather " +
+                "than rewinding the version number.");
         #endregion
 
         return group;

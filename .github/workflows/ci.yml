@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore ProductCatalog.sln
+
+      - name: Build
+        run: dotnet build ProductCatalog.sln --no-restore --configuration Release
+
+      # The integration test project needs Docker and a full Aspire host, so it
+      # is excluded here and run manually. See TESTING.md.
+      - name: Unit tests
+        run: dotnet test ProductCatalog.Api.Tests/ProductCatalog.Api.Tests.csproj --no-build --configuration Release --verbosity normal

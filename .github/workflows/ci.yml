@@ -24,7 +24,11 @@ jobs:
       - name: Build
         run: dotnet build ProductCatalog.sln --no-restore --configuration Release
 
-      # The integration test project needs Docker and a full Aspire host, so it
-      # is excluded here and run manually. See TESTING.md.
       - name: Unit tests
         run: dotnet test ProductCatalog.Api.Tests/ProductCatalog.Api.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      # Starts a PostgreSQL container via Testcontainers; the hosted runner
+      # provides Docker. The Aspire integration tests are not run here - they
+      # bring up Kafka and Elasticsearch too. See TESTING.md.
+      - name: Endpoint tests
+        run: dotnet test ProductCatalog.Api.EndpointTests/ProductCatalog.Api.EndpointTests.csproj --no-build --configuration Release --verbosity normal

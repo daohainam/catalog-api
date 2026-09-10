@@ -15,7 +15,8 @@ public sealed record ProductSnapshot
 {
     public const int CurrentSchemaVersion = 1;
 
-    public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+    /// <summary>Defaults to 0, which is what rows written before this record report.</summary>
+    public int SchemaVersion { get; init; }
     public Guid Id { get; init; }
     public string? Name { get; init; }
     public string? UrlSlug { get; init; }
